@@ -1,78 +1,96 @@
 ---
-title: Hextra Theme
+title: AegisLab Documentation
 layout: hextra-home
 ---
 
 {{< hextra/hero-badge >}}
   <div class="hx:w-2 hx:h-2 hx:rounded-full hx:bg-primary-400"></div>
-  <span>Free, open source</span>
+  <span>Fault Injection & RCA Evaluation Platform</span>
   {{< icon name="arrow-circle-right" attributes="height=14" >}}
 {{< /hextra/hero-badge >}}
 
 <div class="hx:mt-6 hx:mb-6">
 {{< hextra/hero-headline >}}
-  Build modern websites&nbsp;<br class="hx:sm:block hx:hidden" />with Markdown and Hugo
+  AegisLab Ecosystem&nbsp;<br class="hx:sm:block hx:hidden" />for Microservices Research
 {{< /hextra/hero-headline >}}
 </div>
 
 <div class="hx:mb-12">
 {{< hextra/hero-subtitle >}}
-  Fast, batteries-included Hugo theme&nbsp;<br class="hx:sm:block hx:hidden" />for creating beautiful static websites
+  Comprehensive platform for fault injection, chaos engineering,&nbsp;<br class="hx:sm:block hx:hidden" />and root cause analysis algorithm evaluation
 {{< /hextra/hero-subtitle >}}
 </div>
 
-<div class="hx:mb-6">
-{{< hextra/hero-button text="Get Started" link="rcabench" >}}
+## Choose Your Path
+
+Select the path that matches your role:
+
+<div class="hx:mb-6 hx:grid hx:gap-4 hx:md:grid-cols-2">
+  <div class="hx:rounded-lg hx:border hx:border-gray-200 hx:p-6 hx:dark:border-gray-800">
+    <h3 class="hx:text-xl hx:font-bold hx:mb-2">Algorithm Developer</h3>
+    <p class="hx:mb-4">Develop and evaluate root cause analysis algorithms using standardized datasets.</p>
+    <ul class="hx:mb-4 hx:list-disc hx:list-inside hx:space-y-1">
+      <li>Access standardized trace datasets</li>
+      <li>Implement ML-based or rule-based RCA algorithms</li>
+      <li>Evaluate locally with rcabench-platform</li>
+      <li>Submit for remote evaluation via AegisLab</li>
+    </ul>
+    {{< hextra/hero-button text="Start Developing Algorithms" link="algorithm-developers" >}}
+  </div>
+
+  <div class="hx:rounded-lg hx:border hx:border-gray-200 hx:p-6 hx:dark:border-gray-800">
+    <h3 class="hx:text-xl hx:font-bold hx:mb-2">Dataset Creator</h3>
+    <p class="hx:mb-4">Create datasets through intelligent fault injection experiments in microservices systems.</p>
+    <ul class="hx:mb-4 hx:list-disc hx:list-inside hx:space-y-1">
+      <li>Execute fault injection via AegisLab API</li>
+      <li>Use genetic algorithms for intelligent scheduling</li>
+      <li>Collect traces, metrics, and logs automatically</li>
+      <li>Generate standardized datasets for evaluation</li>
+    </ul>
+    {{< hextra/hero-button text="Start Creating Datasets" link="dataset-creators" >}}
+  </div>
 </div>
+
+## Quick Links
 
 <div class="hx:mt-6"></div>
 
 {{< hextra/feature-grid >}}
   {{< hextra/feature-card
-    title="Fast and Full-featured"
-    subtitle="Simple and easy to use, yet powerful and feature-rich."
-    class="hx:aspect-auto hx:md:aspect-[1.1/1] hx:max-md:min-h-[340px]"
-    image="images/hextra-doc.webp"
-    imageClass="hx:top-[40%] hx:left-[24px] hx:w-[180%] hx:sm:w-[110%] hx:dark:opacity-80"
-    style="background: radial-gradient(ellipse at 50% 80%,rgba(194,97,254,0.15),hsla(0,0%,100%,0));"
+    title="Getting Started"
+    subtitle="Understand the ecosystem architecture and choose your path"
+    link="getting-started"
+    icon="play"
   >}}
   {{< hextra/feature-card
-    title="Markdown is All You Need"
-    subtitle="Compose with just Markdown. Enrich with Shortcode components."
-    class="hx:aspect-auto hx:md:aspect-[1.1/1] hx:max-lg:min-h-[340px]"
-    image="images/hextra-markdown.webp"
-    imageClass="hx:top-[40%] hx:left-[36px] hx:w-[180%] hx:sm:w-[110%] hx:dark:opacity-80"
-    style="background: radial-gradient(ellipse at 50% 80%,rgba(142,53,74,0.15),hsla(0,0%,100%,0));"
+    title="Deployment Guide"
+    subtitle="Deploy AegisLab, TrainTicket, and supporting infrastructure"
+    link="deployment"
+    icon="document"
   >}}
   {{< hextra/feature-card
-    title="Full Text Search"
-    subtitle="Built-in full text search with FlexSearch, no extra setup required."
-    class="hx:aspect-auto hx:md:aspect-[1.1/1] hx:max-md:min-h-[340px]"
-    image="images/hextra-search.webp"
-    imageClass="hx:top-[40%] hx:left-[36px] hx:w-[110%] hx:sm:w-[110%] hx:dark:opacity-80"
-    style="background: radial-gradient(ellipse at 50% 80%,rgba(221,210,59,0.15),hsla(0,0%,100%,0));"
+    title="Core Concepts"
+    subtitle="Learn about fault injection, observability, and RCA evaluation"
+    link="concepts"
+    icon="book-open"
   >}}
   {{< hextra/feature-card
-    title="Lightweight as a Feather"
-    subtitle="No dependency or Node.js is needed to use Hextra. Powered by Hugo, one of *the fastest* static site generators, building your site in just seconds with a single binary."
-  >}}
-  {{< hextra/feature-card
-    title="Responsive with Dark Mode Included"
-    subtitle="Looks great on different screen sizes. Built-in dark mode support, with auto-switching based on user's system preference."
-  >}}
-  {{< hextra/feature-card
-    title="Build and Host for Free"
-    subtitle="Build with GitHub Actions, and host for free on GitHub Pages. Alternatively it can be hosted on any static hosting service."
-  >}}
-  {{< hextra/feature-card
-    title="Multi-Language Made Easy"
-    subtitle="Create multi-language pages by just adding locales suffix to the Markdown file. Adding i18n support to your site is intuitive."
-  >}}
-  {{< hextra/feature-card
-    title="And Much More..."
+    title="Contributing"
+    subtitle="Contribute to the AegisLab ecosystem"
+    link="contributing"
     icon="sparkles"
-    subtitle="Syntax highlighting / Table of contents / SEO / RSS / LaTeX / Mermaid / Customizable / and more..."
   >}}
 {{< /hextra/feature-grid >}}
+
+## Ecosystem Components
+
+The AegisLab ecosystem consists of six interconnected components:
+
+- **AegisLab (RCABench)**: Central orchestration platform for fault injection and RCA algorithm execution
+- **TrainTicket**: Target microservices application with 40+ Spring Boot services
+- **Chaos Experiment**: Programmatic wrapper for Chaos Mesh with intelligent fault generation
+- **LoadGenerator**: Realistic load generation with probabilistic behavior patterns
+- **Pandora**: Genetic algorithm-based intelligent fault injection scheduler
+- **RCABench Platform**: Algorithm development framework and evaluation toolkit
 
 {{< github-contributors owner="OperationsPAI" repo="AegisLab" limit="30" >}}
