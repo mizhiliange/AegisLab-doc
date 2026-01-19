@@ -57,27 +57,34 @@ The `input_folder` contains standardized parquet files:
 
 ```
 input_folder/
-├── trace.parquet          # Distributed trace data
-├── log.parquet            # Application logs (optional)
-├── metrics.parquet        # Time-series metrics (optional)
-├── metrics_sli.parquet    # SLI metrics (optional)
-├── injection.json         # Ground truth fault injection info
-└── conclusion.json        # Expected root causes (labels)
+├── abnormal_traces.parquet           # Distributed trace data during fault
+├── normal_traces.parquet             # Baseline trace data before fault
+├── abnormal_logs.parquet             # Application logs during fault (optional)
+├── normal_logs.parquet               # Baseline logs before fault (optional)
+├── abnormal_metrics.parquet          # Time-series metrics during fault (optional)
+├── normal_metrics.parquet            # Baseline metrics before fault (optional)
+├── abnormal_metrics_sum.parquet      # Sum metrics during fault (optional)
+├── abnormal_metrics_histogram.parquet # Histogram metrics during fault (optional)
+├── metrics_sli.parquet               # SLI metrics (optional)
+├── injection.json                    # Ground truth fault injection info
+└── conclusion.parquet                # Span-level performance comparison
 ```
+
+**Note**: The dataset provides both abnormal (during fault) and normal (baseline) data for comparison. Most algorithms focus on the abnormal data files.
 
 ### Example Usage
 
 ```python
 def __call__(self, args: AlgorithmArgs) -> list[AlgorithmAnswer]:
     # Read trace data from input folder
-    traces = pl.read_parquet(args.input_folder / "trace.parquet")
+    traces = pl.read_parquet(args.input_folder / "abnormal_traces.parquet")
 
     # Read ground truth for fault information
     with open(args.input_folder / "injection.json") as f:
         injection = json.load(f)
 
     # Optional: read metrics if available
-    metrics_path = args.input_folder / "metrics.parquet"
+    metrics_path = args.input_folder / "abnormal_metrics.parquet"
     if metrics_path.exists():
         metrics = pl.read_parquet(metrics_path)
 ```
@@ -117,6 +124,7 @@ Here's a complete minimal algorithm:
 from rcabench_platform.v2.algorithms import Algorithm, AlgorithmArgs, AlgorithmAnswer
 import polars as pl
 import json
+from datetime import datetime
 
 class ErrorCountRCA(Algorithm):
     """Simple RCA algorithm that ranks services by error count."""
@@ -127,28 +135,28 @@ class ErrorCountRCA(Algorithm):
     def __call__(self, args: AlgorithmArgs) -> list[AlgorithmAnswer]:
         try:
             # Read trace data from input folder
-            traces = pl.read_parquet(args.input_folder / "trace.parquet")
+            traces = pl.read_parquet(args.input_folder / "abnormal_traces.parquet")
 
             # Read injection info for fault time window
             with open(args.input_folder / "injection.json") as f:
                 injection = json.load(f)
 
-            fault_start = injection.get("start_time")
-            fault_end = injection.get("end_time")
+            # Parse fault time window
+            fault_start = datetime.fromisoformat(injection["start_time"].replace("Z", "+00:00"))
+            fault_end = datetime.fromisoformat(injection["end_time"].replace("Z", "+00:00"))
 
-            # Filter to fault window if timestamps available
-            if fault_start and fault_end:
-                traces = traces.filter(
-                    (pl.col("start_time") >= fault_start) &
-                    (pl.col("start_time") <= fault_end)
-                )
+            # Filter to fault window
+            traces = traces.filter(
+                (pl.col("time") >= fault_start) &
+                (pl.col("time") <= fault_end)
+            )
 
             # Count errors by service
             error_counts = (
                 traces
-                .filter(pl.col("status_code") == "ERROR")
+                .filter(pl.col("attr.status_code") == "Error")
                 .group_by("service_name")
-                .agg(pl.count().alias("error_count"))
+                .agg(pl.len().alias("error_count"))
                 .sort("error_count", descending=True)
             )
 
@@ -171,22 +179,53 @@ class ErrorCountRCA(Algorithm):
 
 ## Algorithm Registration
 
-Register your algorithm in the global registry:
+To make your algorithm available via the CLI, register it in the global registry.
+
+### Step 1: Create Your Algorithm File
+
+Create your algorithm in `rcabench_platform/v2/algorithms/`:
 
 ```python
-# In rcabench_platform/v2/cli/main.py
-from rcabench_platform.v2.algorithms.my_algorithm import MyRCAAlgorithm
-from rcabench_platform.v2.algorithms.spec import global_algorithm_registry
+# rcabench_platform/v2/algorithms/my_algorithm.py
+from .spec import Algorithm, AlgorithmArgs, AlgorithmAnswer
+import polars as pl
 
+class MyRCAAlgorithm(Algorithm):
+    def needs_cpu_count(self) -> int | None:
+        return 1
+
+    def __call__(self, args: AlgorithmArgs) -> list[AlgorithmAnswer]:
+        # Your algorithm implementation
+        traces = pl.read_parquet(args.input_folder / "abnormal_traces.parquet")
+        # ... your logic ...
+        return results
+```
+
+### Step 2: Register in main.py
+
+Add your algorithm to the registration function in `rcabench_platform/v2/cli/main.py`:
+
+```python
 def register_builtin_algorithms():
-    """Register all built-in algorithms."""
+    from ..algorithms.random_ import Random
+    from ..algorithms.my_algorithm import MyRCAAlgorithm  # Add your import
+
     getters = {
-        "my-rca": MyRCAAlgorithm,
+        "random": Random,
+        "my-rca": MyRCAAlgorithm,  # Add your algorithm
     }
 
     registry = global_algorithm_registry()
     for name, getter in getters.items():
         registry[name] = getter
+```
+
+### Step 3: Test Your Algorithm
+
+Run your algorithm via CLI:
+
+```bash
+./main.py eval single my-rca rcabench_filtered <datapack-name>
 ```
 
 ## Best Practices
@@ -214,14 +253,14 @@ Validate input data before processing:
 
 ```python
 def __call__(self, args: AlgorithmArgs) -> list[AlgorithmAnswer]:
-    traces = pl.read_parquet(args.input_folder / "trace.parquet")
+    traces = pl.read_parquet(args.input_folder / "abnormal_traces.parquet")
 
     # Check if data is empty
     if traces.is_empty():
         return []
 
     # Check required columns exist
-    required_cols = ["service_name", "status_code", "start_time"]
+    required_cols = ["service_name", "attr.status_code", "time"]
     if not all(col in traces.columns for col in required_cols):
         print(f"Missing required columns")
         return []
@@ -234,12 +273,12 @@ Use lazy evaluation for large datasets:
 ```python
 def __call__(self, args: AlgorithmArgs) -> list[AlgorithmAnswer]:
     # Use scan instead of read for lazy evaluation
-    traces = pl.scan_parquet(args.input_folder / "trace.parquet")
+    traces = pl.scan_parquet(args.input_folder / "abnormal_traces.parquet")
 
     # Build query without executing
     result = (
         traces
-        .filter(pl.col("status_code") == "ERROR")
+        .filter(pl.col("attr.status_code") == "Error")
         .group_by("service_name")
         .agg(pl.count())
         .collect()  # Execute only when needed
@@ -270,14 +309,14 @@ Combine traces, metrics, and logs:
 ```python
 def __call__(self, args: AlgorithmArgs) -> list[AlgorithmAnswer]:
     # Read all available data from input folder
-    traces = pl.read_parquet(args.input_folder / "trace.parquet")
+    traces = pl.read_parquet(args.input_folder / "abnormal_traces.parquet")
 
     # Check for optional data sources
-    metrics_path = args.input_folder / "metrics.parquet"
+    metrics_path = args.input_folder / "abnormal_metrics.parquet"
     if metrics_path.exists():
         metrics = pl.read_parquet(metrics_path)
 
-    log_path = args.input_folder / "log.parquet"
+    log_path = args.input_folder / "abnormal_logs.parquet"
     if log_path.exists():
         logs = pl.read_parquet(log_path)
 
@@ -328,7 +367,7 @@ class CachedRCA(Algorithm):
         pass
 
     def __call__(self, args: AlgorithmArgs) -> list[AlgorithmAnswer]:
-        traces = pl.read_parquet(args.input_folder / "trace.parquet")
+        traces = pl.read_parquet(args.input_folder / "abnormal_traces.parquet")
 
         # Create hash of trace data
         data_hash = hash(traces.to_pandas().to_json())
@@ -349,9 +388,9 @@ from my_algorithm import MyRCAAlgorithm
 
 def test_algorithm():
     args = AlgorithmArgs(
-        dataset="trainticket-pandora-v1",
-        datapack="0",
-        input_folder=Path("data/trainticket-pandora-v1/0"),
+        dataset="rcabench_filtered",
+        datapack="ts0-ts-auth-service-stress-jv8m9r",
+        input_folder=Path("data/rcabench-platform-v2/data/rcabench_filtered/ts0-ts-auth-service-stress-jv8m9r"),
         output_folder=Path("output/test")
     )
 
@@ -359,10 +398,20 @@ def test_algorithm():
     results = algo(args)
 
     assert len(results) > 0
-    print(f"Test passed! Predicted: {[r.name for r in results]}")
+    print(f"Test passed! Predicted: {[r.name for r in results[:5]]}")
 
 if __name__ == "__main__":
     test_algorithm()
+```
+
+Run via CLI:
+
+```bash
+# Test on a single datapack
+./main.py eval single my-rca rcabench_filtered ts0-ts-auth-service-stress-jv8m9r
+
+# Test on entire dataset
+./main.py eval batch my-rca rcabench_filtered
 ```
 
 ## Next Steps
