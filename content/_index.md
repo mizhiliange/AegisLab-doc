@@ -32,7 +32,7 @@ Select the path that matches your role and start your journey
     <h3>Algorithm Developer</h3>
     <p>Develop and evaluate root cause analysis algorithms using standardized datasets.</p>
     <ul class="hx:mb-4 hx:list-none hx:space-y-2">
-      <li>Access standardized trace datasets</li>
+      <li>Access standardized telemetry datasets</li>
       <li>Implement ML-based or rule-based RCA algorithms</li>
       <li>Evaluate locally with rcabench-platform</li>
       <li>Submit for remote evaluation via AegisLab</li>

@@ -45,9 +45,10 @@
   --aegis-shadow-card-hover: 0 12px 48px rgba(0, 217, 255, 0.2);
 }
 
-/* Global enhancements - keep default fonts for readability */
+/* Global enhancements - professional typography */
 body {
-  /* Don't override default font - keep Hextra's readable fonts */
+  /* Optima font stack for professional appearance */
+  font-family: 'Optima LT Pro', 'Optima', 'Segoe UI', 'Candara', 'Calibri', 'Arial', sans-serif;
   background: var(--aegis-bg-darker);
   color: var(--aegis-text-primary);
 }
@@ -413,7 +414,7 @@ body {
   box-shadow: 0 8px 32px rgba(131, 56, 236, 0.3);
 }
 
-.hextra-home-content .hextra-feature-card h3 {
+.aegis-landing-page .hextra-feature-card h3 {
   font-family: 'Orbitron', sans-serif;
   font-size: 1.25rem;
   font-weight: 600;
@@ -421,14 +422,14 @@ body {
   margin-bottom: 0.75rem;
 }
 
-.hextra-home-content .hextra-feature-card p {
+.aegis-landing-page .hextra-feature-card p {
   color: var(--aegis-text-secondary);
   font-size: 0.95rem;
   line-height: 1.6;
 }
 
 /* Section Headers - Only on landing page */
-.hextra-home-content h2 {
+.aegis-landing-page h2 {
   font-family: 'Syne', sans-serif;
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 700;
@@ -441,7 +442,7 @@ body {
   display: inline-block;
 }
 
-.hextra-home-content h2::after {
+.aegis-landing-page h2::after {
   content: '';
   position: absolute;
   bottom: -10px;
@@ -452,34 +453,6 @@ body {
   border-radius: 2px;
 }
 
-/* Ecosystem Components List */
-.hextra-home-content ul {
-  list-style: none;
-  padding: 0;
-  margin: 2rem 0;
-}
-
-.hextra-home-content ul li {
-  position: relative;
-  padding: 1rem 1.5rem;
-  margin-bottom: 1rem;
-  background: var(--aegis-bg-card);
-  border-left: 3px solid var(--aegis-primary);
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.hextra-home-content ul li:hover {
-  transform: translateX(8px);
-  background: var(--aegis-bg-card-hover);
-  box-shadow: 0 4px 16px rgba(0, 217, 255, 0.2);
-}
-
-.hextra-home-content ul li strong {
-  font-family: 'Orbitron', sans-serif;
-  color: var(--aegis-primary);
-  font-weight: 600;
-}
 
 /* Contributors Section Enhancement */
 .contributors-section {
@@ -639,7 +612,7 @@ body {
 }
 
 /* Feature cards in grid - enhanced - Only on landing page */
-.hextra-home-content .hextra-feature-card h3 {
+.aegis-landing-page .hextra-feature-card h3 {
   font-family: 'Orbitron', sans-serif;
   font-size: 1rem;
   font-weight: 600;
@@ -647,7 +620,7 @@ body {
   margin: 0;
 }
 
-.hextra-home-content .hextra-feature-card p {
+.aegis-landing-page .hextra-feature-card p {
   font-size: 0.875rem;
   color: var(--aegis-text-secondary);
   margin: 0;
@@ -659,8 +632,8 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* Smooth page load animation */
-.hextra-home-content {
+/* Smooth page load animation - Only on landing page */
+.aegis-landing-page {
   animation: pageLoad 0.8s ease-out;
 }
 
@@ -747,6 +720,6 @@ html:not(.dark) .hextra-feature-card {
 }
 
 /* Typography adjustments for sections - Only on landing page */
-.hextra-home-content .hx\\:text-center.hx\\:text-lg {
+.aegis-landing-page .hx\\:text-center.hx\\:text-lg {
   font-family: 'JetBrains Mono', monospace;
 }
