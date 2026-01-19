@@ -11,7 +11,76 @@ Get started with RCA algorithm development in under 15 minutes.
 
 - Python 3.10 or higher
 - Git
+- uv (Python package manager)
 - Basic understanding of distributed tracing concepts
+
+## Pre-Flight Checks
+
+Before starting, verify your environment is properly configured:
+
+### 1. Check Python Version
+
+```bash
+python3 --version
+# Expected: Python 3.10.x or higher
+```
+
+### 2. Check uv Installation
+
+```bash
+uv --version
+# Expected: uv 0.x.x
+
+# If not installed:
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### 3. Check Git Installation
+
+```bash
+git --version
+# Expected: git version 2.x.x
+```
+
+### Verification Script
+
+Run this script to verify all prerequisites:
+
+```bash
+#!/bin/bash
+# Save as check_prereqs.sh and run with: bash check_prereqs.sh
+
+echo "Checking prerequisites..."
+
+# Check Python version
+python_version=$(python3 --version 2>&1 | cut -d' ' -f2)
+python_major=$(echo $python_version | cut -d'.' -f1)
+python_minor=$(echo $python_version | cut -d'.' -f2)
+if [ "$python_major" -ge 3 ] && [ "$python_minor" -ge 10 ]; then
+    echo "✓ Python $python_version"
+else
+    echo "✗ Python 3.10+ required (found $python_version)"
+    exit 1
+fi
+
+# Check uv
+if command -v uv &> /dev/null; then
+    echo "✓ uv $(uv --version | head -1)"
+else
+    echo "✗ uv not found. Install with: curl -LsSf https://astral.sh/uv/install.sh | sh"
+    exit 1
+fi
+
+# Check git
+if command -v git &> /dev/null; then
+    echo "✓ git $(git --version | cut -d' ' -f3)"
+else
+    echo "✗ git not found"
+    exit 1
+fi
+
+echo "All prerequisites satisfied!"
+```
 
 ## Step 1: Install rcabench-platform
 
@@ -33,7 +102,39 @@ Test the installation by running the self-test:
 ./main.py self test
 ```
 
-You should see output indicating successful tests for the core platform components.
+**Expected output:**
+
+```
+[INFO] Testing rcabench-platform environment...
+[ERROR] ClickHouse ping failed: ... (expected if ClickHouse not running)
+[ERROR] RCABench ping failed: ... (expected if credentials not configured)
+[INFO] config.data is found: data/rcabench-platform-v2
+[INFO] Hello from rcabench-platform!
+```
+
+**Note**: ClickHouse and RCABench API errors are expected if you're only doing local evaluation. The important check is that the data directory is found.
+
+### Check Dataset Availability
+
+Verify you have access to datasets:
+
+```bash
+./main.py eval show-datasets
+```
+
+**Expected output:**
+
+```
+[INFO] Available datasets (37):
+[INFO]     rcabench_filtered        (1124 datapacks)
+[INFO]     rcaeval_re2_tt           (  90 datapacks)
+[INFO]     rcaeval_re2_ob           (  90 datapacks)
+[INFO]     aiops21                  ( 159 datapacks)
+[INFO]     eadro_tt                 (  81 datapacks)
+...
+```
+
+If you see "Available datasets (0)", your data directory is not properly configured. See troubleshooting below.
 
 ## Step 3: Download Sample Dataset
 
@@ -61,16 +162,25 @@ This command:
 - Uses the `rcabench_filtered` dataset
 - Processes the specified datapack (fault injection scenario)
 
-You should see output indicating successful execution:
+**Expected output:**
 
 ```
+[DEBUG] enter single
 [INFO] enter run_single
 [DEBUG] enter Random.__call__
 [DEBUG] found 33 service names
-[DEBUG] exit Random.__call__ duration=0.173140s
+[DEBUG] exit Random.__call__ duration=0.163444s
 [DEBUG] len(answers)=33
-[DEBUG] hit: {'level': 'service', 'name': 'ts-auth-service', 'rank': 22, ...}
-[INFO] exit run_single duration=0.408342s
+[DEBUG] hit: {'level': 'service', 'name': 'ts-auth-service', 'rank': 31, ...}
+[DEBUG] saved parquet to output/.../random/output.parquet
+[DEBUG] saved parquet to output/.../random/perf.parquet
+[INFO] exit run_single duration=0.384085s
+```
+
+**Note**: If you see `skipping output/.../random` message, the algorithm was already run. Use `--clear` flag to re-run:
+
+```bash
+./main.py eval single random rcabench_filtered ts0-ts-auth-service-stress-jv8m9r --clear
 ```
 
 ## Understanding the Output
