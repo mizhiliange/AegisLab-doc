@@ -30,203 +30,178 @@ my-rca-algorithm/
 ├── Dockerfile              # Container definition
 ├── entrypoint.sh          # Execution script
 ├── info.toml              # Algorithm metadata
-├── requirements.txt       # Python dependencies
-└── algorithm.py           # Your algorithm code
+├── main.py                # Algorithm registration and CLI entry point
+├── pyproject.toml         # Python project configuration (for uv)
+├── uv.lock                # Locked dependencies (for uv)
+└── src/                   # Your algorithm implementation
+    └── my_algorithm.py
 ```
 
 ## Creating the Dockerfile
 
-### Basic Dockerfile
+### Option 1: Using rcabench-platform Base Image (Recommended)
+
+This is the simplest approach - use the pre-built rcabench-platform image:
 
 ```dockerfile
-FROM python:3.10-slim
+FROM 10.10.10.240/library/rcabench-platform:latest
+
+COPY entrypoint.sh /entrypoint.sh
+
+CMD ["/entrypoint.sh"]
+```
+
+**Advantages:**
+- Smallest image size (only adds your entrypoint script)
+- All dependencies pre-installed
+- Fastest build time
+- Consistent environment
+
+**Use when:** Your algorithm only uses built-in rcabench-platform algorithms or has no additional dependencies.
+
+### Option 2: Using uv with Custom Dependencies
+
+For algorithms with additional dependencies, use uv for fast, reproducible builds:
+
+```dockerfile
+FROM ghcr.io/astral-sh/uv:bookworm-slim AS builder
+
+ENV UV_LINK_MODE=copy
+
+RUN uv python install 3.13
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install dependencies first (cached layer)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project --no-dev
 
 # Copy algorithm code
-COPY algorithm.py .
-COPY entrypoint.sh .
+ADD . /app
 
-# Make entrypoint executable
-RUN chmod +x entrypoint.sh
+# Install project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
 
-# Set entrypoint
-ENTRYPOINT ["/app/entrypoint.sh"]
+COPY entrypoint.sh /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
 ```
 
-### With rcabench-platform
+**Advantages:**
+- Fast dependency resolution with uv
+- Reproducible builds with uv.lock
+- Support for custom dependencies
+- Docker layer caching for dependencies
 
-```dockerfile
-FROM python:3.10-slim
-
-WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install rcabench-platform
-RUN pip install --no-cache-dir git+https://github.com/OperationsPAI/rcabench-platform.git
-
-# Copy algorithm code
-COPY algorithm.py /app/
-COPY entrypoint.sh /app/
-
-RUN chmod +x /app/entrypoint.sh
-
-ENTRYPOINT ["/app/entrypoint.sh"]
-```
+**Use when:** Your algorithm requires additional Python packages beyond rcabench-platform.
 
 ## Creating the Entrypoint Script
 
-The entrypoint script receives arguments from AegisLab and executes your algorithm:
+The entrypoint script executes your algorithm using the rcabench-platform container interface:
 
 ```bash
-#!/bin/bash
-set -e
-
-# Parse arguments
-TRACE_PATH=$1
-GROUND_TRUTH_PATH=$2
-OUTPUT_PATH=$3
-METRIC_PATH=${4:-""}
-LOG_PATH=${5:-""}
-
-# Run algorithm
-python3 /app/algorithm.py \
-    --trace-path "$TRACE_PATH" \
-    --ground-truth-path "$GROUND_TRUTH_PATH" \
-    --output-path "$OUTPUT_PATH" \
-    --metric-path "$METRIC_PATH" \
-    --log-path "$LOG_PATH"
+#!/bin/bash -ex
+export ALGORITHM=${ALGORITHM:-my-algorithm}
+LOGURU_COLORIZE=0 .venv/bin/python main.py container run
 ```
 
-### With rcabench-platform CLI
+**Key points:**
+- `#!/bin/bash -ex`: Enable error exit and command echoing for debugging
+- `ALGORITHM`: Environment variable specifying which algorithm to run (set by AegisLab)
+- `LOGURU_COLORIZE=0`: Disable colored logs for better readability in K8s logs
+- `main.py container run`: Invokes the rcabench-platform container CLI
 
-```bash
-#!/bin/bash
-set -e
-
-# Arguments passed by AegisLab
-ALGORITHM_NAME=$1
-DATASET_NAME=$2
-DATAPACK_ID=$3
-OUTPUT_PATH=$4
-
-# Run using rcabench-platform CLI
-cd /app/rcabench-platform
-./main.py eval single "$ALGORITHM_NAME" "$DATASET_NAME" "$DATAPACK_ID" \
-    --output-path "$OUTPUT_PATH"
-```
+**Environment variables provided by AegisLab:**
+- `ALGORITHM`: Algorithm name to execute
+- `INPUT_PATH`: Path to input data (parquet files)
+- `OUTPUT_PATH`: Path to write results
+- `EXECUTION_ID`: Execution ID for result submission
+- `RCABENCH_BASE_URL`: AegisLab API URL for result submission
+- `RCABENCH_SUBMITION`: Set to "false" to disable automatic submission (for testing)
 
 ## Creating info.toml
 
-Metadata file describing your algorithm:
+Metadata file identifying your algorithm:
 
 ```toml
-[algorithm]
-name = "my-rca"
-version = "1.0.0"
-description = "My RCA algorithm using error analysis"
-author = "Your Name"
-email = "your.email@example.com"
-
-[algorithm.requirements]
-python = ">=3.10"
-memory = "2Gi"
-cpu = "1000m"
-
-[algorithm.parameters]
-# Optional: configurable parameters
-threshold = 0.5
-window_size = 60
-
-[algorithm.outputs]
-# Expected output format
-format = "json"
-schema = "AlgorithmAnswer"
+name = "my-algorithm"
+tag = "v1.0.0"
 ```
 
-## Algorithm Code
+**Fields:**
+- `name`: Algorithm name (must match the name registered in your main.py)
+- `tag`: Optional version tag for the container image
 
-Your algorithm code should accept command-line arguments:
+Note: Resource requirements (memory, CPU, timeout) are configured at runtime when submitting execution tasks via the AegisLab API, not in the container metadata.
+
+## Algorithm Registration (main.py)
+
+Your algorithm container needs a main.py file that registers your algorithm with the rcabench-platform CLI:
 
 ```python
-# algorithm.py
-import argparse
-import polars as pl
-from dataclasses import asdict
-import json
-
-from rcabench_platform.v2.algorithms import Algorithm, AlgorithmArgs, AlgorithmAnswer
-
-class MyRCAAlgorithm(Algorithm):
-    def __call__(self, args: AlgorithmArgs) -> AlgorithmAnswer:
-        # Your algorithm logic
-        traces = pl.read_parquet(args.trace_path)
-
-        # Analyze traces
-        error_counts = (
-            traces
-            .filter(pl.col("status_code") == "ERROR")
-            .group_by("service_name")
-            .agg(pl.count().alias("error_count"))
-            .sort("error_count", descending=True)
-        )
-
-        ranked_services = error_counts["service_name"].to_list()
-
-        return AlgorithmAnswer(
-            ranked_services=ranked_services,
-            metadata={"algorithm": "my-rca", "version": "1.0.0"}
-        )
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--trace-path", required=True)
-    parser.add_argument("--ground-truth-path", required=True)
-    parser.add_argument("--output-path", required=True)
-    parser.add_argument("--metric-path", default=None)
-    parser.add_argument("--log-path", default=None)
-
-    args = parser.parse_args()
-
-    # Create AlgorithmArgs
-    algo_args = AlgorithmArgs(
-        trace_path=args.trace_path,
-        ground_truth_path=args.ground_truth_path,
-        output_path=args.output_path,
-        metric_path=args.metric_path,
-        log_path=args.log_path,
-        dataset_name="unknown",
-        datapack_id="unknown",
-        benchmark="unknown"
-    )
-
-    # Run algorithm
-    algorithm = MyRCAAlgorithm()
-    result = algorithm(algo_args)
-
-    # Write output
-    output_file = f"{args.output_path}/result.json"
-    with open(output_file, "w") as f:
-        json.dump(asdict(result), f, indent=2)
-
-    print(f"Results written to {output_file}")
+#!/usr/bin/env -S uv run -s
+from rcabench_platform.v2.cli.main import main
+from rcabench_platform.v2.algorithms.spec import global_algorithm_registry
+from my_algorithm import MyAlgorithm
 
 if __name__ == "__main__":
-    main()
+    # Register your algorithm
+    registry = global_algorithm_registry()
+    registry["my-algorithm"] = MyAlgorithm
+
+    # Run CLI with builtin algorithms disabled (optional)
+    main(enable_builtin_algorithms=False)
+```
+
+**Key points:**
+- Import your algorithm class
+- Register it in the global registry with a unique name
+- The name must match the `ALGORITHM` environment variable
+- Set `enable_builtin_algorithms=False` if you only want your algorithm available
+
+**Example from baro algorithm:**
+
+```python
+#!/usr/bin/env -S uv run -s
+from rcabench_platform.v2.cli.main import main
+from rcabench_platform.v2.algorithms.spec import global_algorithm_registry
+from baro.baro import Baro
+
+if __name__ == "__main__":
+    registry = global_algorithm_registry()
+    registry["baro"] = Baro
+
+    main(enable_builtin_algorithms=False)
+```
+
+## Python Project Configuration (pyproject.toml)
+
+For algorithms with custom dependencies, create a pyproject.toml:
+
+```toml
+[project]
+name = "my-algorithm"
+version = "0.1.0"
+description = "My RCA algorithm"
+requires-python = ">=3.13"
+dependencies = [
+    "rcabench>=1.1.34",
+    "rcabench-platform>=0.4.1",
+    # Add your custom dependencies here
+]
+
+[build-system]
+requires = ["uv_build>=0.7.12,<0.8.0"]
+build-backend = "uv_build"
+```
+
+Then generate uv.lock:
+
+```bash
+uv lock
 ```
 
 ## Building the Container
@@ -234,217 +209,516 @@ if __name__ == "__main__":
 ### Build Image
 
 ```bash
+# Navigate to your algorithm directory
+cd my-rca-algorithm
+
 # Build the image
-docker build -t my-rca:1.0.0 .
+docker build -t my-algorithm:latest .
 
-# Test locally
-docker run --rm \
-    -v $(pwd)/data:/data \
-    my-rca:1.0.0 \
-    /data/trace.parquet \
-    /data/ground_truth.parquet \
-    /data/output
+# Verify the image was created
+docker images | grep my-algorithm
 ```
 
-### Tag for Registry
+### Tag for Harbor Registry
+
+Tag your image for the AegisLab Harbor registry:
 
 ```bash
-# Tag for Docker Hub
-docker tag my-rca:1.0.0 username/my-rca:1.0.0
+# Format: <registry>/<namespace>/<algorithm>:<tag>
+docker tag my-algorithm:latest 10.10.10.240/library/my-algorithm:v1.0.0
 
-# Tag for Harbor
-docker tag my-rca:1.0.0 harbor.example.com/project/my-rca:1.0.0
+# Also tag as latest
+docker tag my-algorithm:latest 10.10.10.240/library/my-algorithm:latest
 ```
 
-### Push to Registry
+**Harbor Registry Configuration:**
+- Registry: `10.10.10.240`
+- Namespace: `library` (default) or your project namespace
+- Use semantic versioning for tags: `v1.0.0`, `v1.1.0`, etc.
+
+### Push to Harbor Registry
 
 ```bash
-# Login to registry
-docker login
+# Login to Harbor registry
+docker login 10.10.10.240
+# Username: admin (or your Harbor username)
+# Password: Harbor12345 (or your Harbor password)
 
-# Push image
-docker push username/my-rca:1.0.0
+# Push the versioned image
+docker push 10.10.10.240/library/my-algorithm:v1.0.0
+
+# Push the latest tag
+docker push 10.10.10.240/library/my-algorithm:latest
 ```
 
 ## Testing the Container
 
-### Local Test
+### Local Test with Environment Variables
 
-Create a test script:
+Create a test script that mimics the AegisLab execution environment:
 
 ```bash
 #!/bin/bash
 # test_container.sh
 
-# Prepare test data
-mkdir -p test_data/output
+# Prepare test data directory
+mkdir -p test_data/input test_data/output
 
-# Run container
+# Copy test dataset to input directory
+# (Use an actual datapack from rcabench_dataset)
+cp -r /mnt/jfs/rcabench_dataset/ts0-ts-auth-service-stress-jv8m9r/* test_data/input/
+
+# Run container with environment variables
 docker run --rm \
-    -v $(pwd)/test_data:/data \
-    my-rca:1.0.0 \
-    /data/trace.parquet \
-    /data/ground_truth.parquet \
-    /data/output \
-    /data/metrics.parquet \
-    /data/log.parquet
+    -v $(pwd)/test_data/input:/input:ro \
+    -v $(pwd)/test_data/output:/output \
+    -e ALGORITHM=my-algorithm \
+    -e INPUT_PATH=/input \
+    -e OUTPUT_PATH=/output \
+    -e RCABENCH_SUBMITION=false \
+    my-algorithm:latest
 
 # Check output
-cat test_data/output/result.json
+ls -la test_data/output/
+```
+
+### Interactive Debugging
+
+Run the container interactively to debug issues:
+
+```bash
+# Start shell in container
+docker run -it --rm \
+    -v $(pwd)/test_data/input:/input:ro \
+    -v $(pwd)/test_data/output:/output \
+    -e ALGORITHM=my-algorithm \
+    -e INPUT_PATH=/input \
+    -e OUTPUT_PATH=/output \
+    --entrypoint /bin/bash \
+    my-algorithm:latest
+
+# Inside container, test manually:
+export ALGORITHM=my-algorithm
+export RCABENCH_SUBMITION=false
+.venv/bin/python main.py container run
 ```
 
 ### Verify Output Format
 
+The container should produce results in the expected format:
+
 ```python
 # verify_output.py
-import json
+import pandas as pd
+from pathlib import Path
 
-with open("test_data/output/result.json") as f:
-    result = json.load(f)
+output_dir = Path("test_data/output")
 
-# Verify required fields
-assert "ranked_services" in result
-assert isinstance(result["ranked_services"], list)
-assert len(result["ranked_services"]) > 0
+# Check for result file
+result_files = list(output_dir.glob("*_result_*.csv"))
+if result_files:
+    df = pd.read_csv(result_files[0])
+    print(f"Found {len(df)} results")
+    print(df.head())
 
-print("✓ Output format is valid")
+    # Verify required columns
+    required_cols = ["level", "result", "rank"]
+    assert all(col in df.columns for col in required_cols), f"Missing columns: {set(required_cols) - set(df.columns)}"
+    print("Output format is valid")
 ```
 
-## Uploading to AegisLab
+## Registering with AegisLab
 
-Use the AegisLab SDK to register your algorithm:
+After pushing your container to Harbor, register it with AegisLab using the Python SDK:
 
 ```python
-from rcabench.openapi import ApiClient, Configuration, AlgorithmApi
-from rcabench.openapi.models import DtoRegisterAlgorithmReq
+from rcabench.openapi import ApiClient, Configuration, ContainersApi
+from rcabench.openapi.models import CreateContainerReq, ContainerType
+import os
 
-config = Configuration(host="http://aegislab-api:8080")
+# Configure API client
+config = Configuration(host=os.getenv("AEGISLAB_API_URL", "http://10.10.10.220:8080"))
 client = ApiClient(config)
-api = AlgorithmApi(client)
+api = ContainersApi(client)
 
-# Register algorithm
-req = DtoRegisterAlgorithmReq(
-    name="my-rca",
-    version="1.0.0",
-    image="username/my-rca:1.0.0",
-    description="My RCA algorithm",
-    metadata={
-        "author": "Your Name",
-        "email": "your.email@example.com"
-    }
+# Register algorithm container
+req = CreateContainerReq(
+    name="my-algorithm",
+    type=ContainerType.Algorithm,
+    image="10.10.10.240/library/my-algorithm",
+    tag="v1.0.0",
+    description="My RCA algorithm for microservices root cause analysis"
 )
 
-response = api.register_algorithm(req)
-print(f"Algorithm registered with ID: {response.algorithm_id}")
+response = api.create_container(req)
+print(f"Container registered with ID: {response.data.id}")
 ```
+
+**Note:** You can also register containers through the AegisLab web UI at `${AEGISLAB_API_URL}/containers`.
 
 ## Best Practices
 
-### Keep Images Small
+### Use the Base Image When Possible
+
+The simplest and most reliable approach is to use the rcabench-platform base image:
 
 ```dockerfile
-# Use slim base images
-FROM python:3.10-slim
+FROM 10.10.10.240/library/rcabench-platform:latest
 
-# Clean up after apt-get
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+COPY entrypoint.sh /entrypoint.sh
 
-# Use --no-cache-dir with pip
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Use multi-stage builds for compiled dependencies
-FROM python:3.10-slim as builder
-RUN pip install --user package
-
-FROM python:3.10-slim
-COPY --from=builder /root/.local /root/.local
+CMD ["/entrypoint.sh"]
 ```
 
-### Pin Dependencies
+This is how the builtin algorithms (random, traceback) are containerized.
 
-```txt
-# requirements.txt
-polars==0.19.0
-numpy==1.24.0
-scikit-learn==1.3.0
+### Keep Images Small
+
+When using custom dependencies:
+
+```dockerfile
+# Use uv's slim base image
+FROM ghcr.io/astral-sh/uv:bookworm-slim AS builder
+
+# Use cache mounts for faster rebuilds
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
+
+# Don't include dev dependencies
+uv sync --frozen --no-dev
+```
+
+### Pin Dependencies with uv.lock
+
+Always include a `uv.lock` file for reproducible builds:
+
+```bash
+# Generate lock file
+uv lock
+
+# Verify lockfile is up to date
+uv lock --check
+```
+
+### Use Multi-Stage Builds for Compiled Dependencies
+
+```dockerfile
+FROM ghcr.io/astral-sh/uv:bookworm-slim AS builder
+
+RUN uv python install 3.13
+WORKDIR /app
+
+# Install dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --frozen --no-install-project --no-dev
+
+ADD . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
+
+COPY entrypoint.sh /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
 ```
 
 ### Handle Errors Gracefully
 
 ```python
-def __call__(self, args: AlgorithmArgs) -> AlgorithmAnswer:
+def __call__(self, args: AlgorithmArgs) -> list[AlgorithmAnswer]:
     try:
         # Algorithm logic
         pass
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
+        logger.error(f"Algorithm error: {e}")
         # Return empty result instead of crashing
-        return AlgorithmAnswer(ranked_services=[])
+        return []
 ```
 
-### Log Progress
+### Log Progress for Debugging
 
 ```python
-def __call__(self, args: AlgorithmArgs) -> AlgorithmAnswer:
-    print(f"Loading traces from {args.trace_path}")
-    traces = pl.read_parquet(args.trace_path)
-    print(f"Loaded {len(traces)} traces")
+from rcabench_platform.v2.logging import logger
 
-    print("Analyzing error patterns...")
+def __call__(self, args: AlgorithmArgs) -> list[AlgorithmAnswer]:
+    logger.info(f"Loading traces from {args.input_folder}")
+    traces = pl.read_parquet(args.input_folder / "abnormal_traces.parquet")
+    logger.info(f"Loaded {traces.height} traces")
+
+    logger.info("Analyzing error patterns...")
     # Analysis logic
 
-    print(f"Found {len(ranked_services)} suspected services")
-    return AlgorithmAnswer(ranked_services=ranked_services)
-```
-
-### Set Resource Limits
-
-In `info.toml`:
-
-```toml
-[algorithm.requirements]
-memory = "4Gi"      # Maximum memory
-cpu = "2000m"       # 2 CPU cores
-timeout = 300       # 5 minutes timeout
+    logger.info(f"Found {len(ranked_services)} suspected services")
+    return ranked_services
 ```
 
 ## Troubleshooting
 
 ### Container Fails to Start
 
-```bash
-# Check container logs
-docker logs <container-id>
+**Symptom:**
+```
+Error: container exited with code 1
+```
 
-# Run interactively for debugging
-docker run -it --entrypoint /bin/bash my-rca:1.0.0
+**Solutions:**
+
+1. Check container logs:
+```bash
+docker logs <container-id>
+```
+
+2. Run interactively for debugging:
+```bash
+docker run -it --entrypoint /bin/bash my-algorithm:latest
+```
+
+3. Verify entrypoint.sh is executable:
+```dockerfile
+RUN chmod +x /entrypoint.sh
+```
+
+4. Check for missing environment variables:
+```bash
+docker run --rm \
+    -e ALGORITHM=my-algorithm \
+    -e INPUT_PATH=/input \
+    -e OUTPUT_PATH=/output \
+    my-algorithm:latest
+```
+
+### Algorithm Not Found in Registry
+
+**Symptom:**
+```
+AssertionError: Unknown algorithm: my-algorithm
+```
+
+**Solutions:**
+
+1. Verify algorithm is registered in main.py:
+```python
+registry = global_algorithm_registry()
+registry["my-algorithm"] = MyAlgorithm  # Name must match ALGORITHM env var
+```
+
+2. Check ALGORITHM environment variable matches registered name:
+```bash
+export ALGORITHM=my-algorithm  # Must match registry key
+```
+
+3. Verify algorithm class is imported correctly:
+```python
+from my_algorithm import MyAlgorithm  # Check import path
 ```
 
 ### Permission Errors
 
+**Symptom:**
+```
+PermissionError: [Errno 13] Permission denied: '/output/result.csv'
+```
+
+**Solutions:**
+
+1. Ensure output directory is writable:
+```bash
+docker run --rm \
+    -v $(pwd)/output:/output:rw \  # Add :rw for read-write
+    my-algorithm:latest
+```
+
+2. Create non-root user in Dockerfile (if needed):
 ```dockerfile
-# Create non-root user
 RUN useradd -m -u 1000 algorithm
 USER algorithm
 ```
 
+3. Check directory ownership:
+```bash
+ls -la output/
+chmod 777 output/  # For testing only
+```
+
 ### Missing Dependencies
 
+**Symptom:**
+```
+ModuleNotFoundError: No module named 'polars'
+```
+
+**Solutions:**
+
+1. Verify dependencies are in pyproject.toml:
+```toml
+dependencies = [
+    "rcabench-platform>=0.4.1",
+    "polars>=0.19.0",
+]
+```
+
+2. Regenerate uv.lock:
 ```bash
-# Test dependencies in container
-docker run -it my-rca:1.0.0 python -c "import polars; print(polars.__version__)"
+uv lock
+```
+
+3. Test dependencies in container:
+```bash
+docker run -it my-algorithm:latest /bin/bash
+.venv/bin/python -c "import polars; print(polars.__version__)"
 ```
 
 ### Large Image Size
 
-```bash
-# Check image size
-docker images my-rca:1.0.0
+**Symptom:**
+```
+Image size: 2.5GB
+```
 
-# Analyze layers
-docker history my-rca:1.0.0
+**Solutions:**
+
+1. Use rcabench-platform base image (smallest):
+```dockerfile
+FROM 10.10.10.240/library/rcabench-platform:latest
+COPY entrypoint.sh /entrypoint.sh
+CMD ["/entrypoint.sh"]
+```
+
+2. Use slim base images:
+```dockerfile
+FROM ghcr.io/astral-sh/uv:bookworm-slim  # Not bookworm
+```
+
+3. Check image layers:
+```bash
+docker history my-algorithm:latest
+```
+
+4. Remove unnecessary files:
+```dockerfile
+# Add .dockerignore file
+.git
+__pycache__
+*.pyc
+.venv
+data/
+output/
+```
+
+### Harbor Push Fails
+
+**Symptom:**
+```
+Error: unauthorized: authentication required
+```
+
+**Solutions:**
+
+1. Login to Harbor registry:
+```bash
+docker login 10.10.10.240
+# Username: admin
+# Password: Harbor12345
+```
+
+2. Verify image tag format:
+```bash
+# Correct format: <registry>/<namespace>/<image>:<tag>
+docker tag my-algorithm:latest 10.10.10.240/library/my-algorithm:v1.0.0
+```
+
+3. Check Harbor project permissions:
+- Ensure you have push access to the `library` project
+- Contact Harbor administrator if needed
+
+### Container Runs But No Output
+
+**Symptom:**
+Container completes successfully but no results in output directory.
+
+**Solutions:**
+
+1. Check if submission is disabled:
+```bash
+# Enable local output for testing
+docker run --rm \
+    -e RCABENCH_SUBMITION=false \
+    -v $(pwd)/output:/output \
+    my-algorithm:latest
+```
+
+2. Verify algorithm returns results:
+```python
+def __call__(self, args: AlgorithmArgs) -> list[AlgorithmAnswer]:
+    # Must return non-empty list
+    return [
+        AlgorithmAnswer(level="service", name="service-a", rank=1),
+        AlgorithmAnswer(level="service", name="service-b", rank=2),
+    ]
+```
+
+3. Check container logs for errors:
+```bash
+docker logs <container-id> 2>&1 | grep -i error
+```
+
+### Input Data Not Found
+
+**Symptom:**
+```
+FileNotFoundError: [Errno 2] No such file or directory: '/input/injection.json'
+```
+
+**Solutions:**
+
+1. Verify input directory is mounted:
+```bash
+docker run --rm \
+    -v /path/to/datapack:/input:ro \  # Must contain injection.json
+    my-algorithm:latest
+```
+
+2. Check datapack structure:
+```bash
+ls -la /path/to/datapack/
+# Should contain: injection.json, abnormal_traces.parquet, etc.
+```
+
+3. Use actual datapack from JuiceFS:
+```bash
+# Copy from JuiceFS mount
+cp -r /mnt/jfs/rcabench_dataset/ts0-ts-auth-service-stress-jv8m9r test_data/input/
+```
+
+### Build Fails with uv
+
+**Symptom:**
+```
+Error: failed to solve: process "/bin/sh -c uv sync" did not complete successfully
+```
+
+**Solutions:**
+
+1. Verify uv.lock is committed:
+```bash
+git add uv.lock
+git commit -m "Add uv.lock"
+```
+
+2. Use cache mounts for faster builds:
+```dockerfile
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
+```
+
+3. Check pyproject.toml syntax:
+```bash
+uv lock --check
+```
+
+4. Ensure Python version is available:
+```dockerfile
+RUN uv python install 3.13  # Before uv sync
 ```
 
 ## Next Steps
