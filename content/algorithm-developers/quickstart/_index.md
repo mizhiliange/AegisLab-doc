@@ -49,46 +49,68 @@ mkdir -p data/sample
 
 ## Step 4: Run Your First Algorithm
 
-Run the built-in `simplerca` algorithm on a sample dataset:
+Run the built-in `random` algorithm on a sample dataset:
 
 ```bash
-./main.py eval single simplerca trainticket-pandora-v1 0
+./main.py eval single random rcabench_filtered ts0-ts-auth-service-stress-jv8m9r
 ```
 
 This command:
-- Evaluates the `simplerca` algorithm
-- Uses the `trainticket-pandora-v1` dataset
-- Processes datapack `0` (first fault injection scenario)
+- Evaluates the `random` algorithm (randomly ranks all services)
+- Uses the `rcabench_filtered` dataset
+- Processes the specified datapack (fault injection scenario)
+
+You should see output indicating successful execution:
+
+```
+[INFO] enter run_single
+[DEBUG] enter Random.__call__
+[DEBUG] found 33 service names
+[DEBUG] exit Random.__call__ duration=0.173140s
+[DEBUG] len(answers)=33
+[DEBUG] hit: {'level': 'service', 'name': 'ts-auth-service', 'rank': 22, ...}
+[INFO] exit run_single duration=0.408342s
+```
 
 ## Understanding the Output
 
-The evaluation will output metrics like:
+The evaluation produces two key outputs:
+
+1. **Ranked Services** (`output.parquet`): A list of all services ranked by suspected root cause probability
+2. **Performance Metrics** (`perf.parquet`): Evaluation metrics comparing predictions to ground truth
+
+Example metrics from the random algorithm:
 
 ```
-MRR: 0.85
-Avg@1: 0.75
-Avg@3: 2.1
-Top-1 Accuracy: 0.75
-Top-3 Accuracy: 0.90
+MRR: 0.045455
+Avg@1: 0.0
+Avg@3: 0.0
+Avg@5: 0.0
+AC@1: 0.0
+AC@3: 0.0
+AC@5: 0.0
 ```
 
 **Metrics explained:**
 - **MRR (Mean Reciprocal Rank)**: Average of 1/rank for the first correct answer (higher is better, max 1.0)
 - **Avg@k**: Average number of correct answers in top-k predictions
-- **Top-k Accuracy**: Percentage of cases where at least one correct answer appears in top-k
+- **AC@k (Top-k Accuracy)**: Percentage of cases where at least one correct answer appears in top-k
+
+The random algorithm performs poorly (as expected), but demonstrates the evaluation framework works correctly.
 
 ## Step 5: Explore the Algorithm Code
 
-Look at the `simplerca` implementation to understand the algorithm interface:
+Look at the `random` implementation to understand the algorithm interface:
 
 ```bash
-cat src/rcabench_platform/v2/algorithms/simplerca.py
+cat src/rcabench_platform/v2/algorithms/random_.py
 ```
 
 Key components:
 - `Algorithm` base class with `__call__` method
-- `AlgorithmArgs` input containing traces, metrics, and metadata
-- `AlgorithmAnswer` output with ranked root cause predictions
+- `AlgorithmArgs` input containing dataset name, datapack ID, and input folder path
+- `AlgorithmAnswer` output with ranked root cause predictions (level, name, rank)
+- The algorithm reads parquet files from `input_folder` and returns a list of ranked services
 
 ## Next Steps
 
@@ -101,10 +123,90 @@ Now that you've run your first algorithm:
 
 ## Troubleshooting
 
-**Dataset not found**: Ensure you have access to datasets via JuiceFS mount or download sample datasets.
+### Dataset Not Found Error
 
-**Import errors**: Verify installation with `uv sync --all-extras` and check Python version (3.10+).
+**Error**: `FileNotFoundError: No such file or directory ... data/rcabench-platform-v2/data/...`
 
-**Permission errors**: Check file permissions on the data directory and ensure JuiceFS is mounted correctly.
+**Solution**: Ensure datasets are properly mounted and symlinked:
+
+```bash
+# Check if JuiceFS is mounted
+ls /mnt/jfs/rcabench-platform-v2
+
+# Create symlink if missing
+cd rcabench-platform
+mkdir -p data
+ln -s /mnt/jfs/rcabench-platform-v2 data/
+```
+
+### Datapack Not Found Error
+
+**Error**: `AssertionError: Labels for datapack '0' not found in dataset 'xxx'`
+
+**Cause**: Datapacks use descriptive names (not numeric IDs like `0`).
+
+**Solution**: List available datapacks and use the full name:
+
+```bash
+# List all datasets
+./main.py eval show-datasets
+
+# List datapacks in a dataset
+ls data/rcabench-platform-v2/data/rcabench_filtered/
+
+# Use the full datapack name
+./main.py eval single random rcabench_filtered ts0-ts-auth-service-stress-jv8m9r
+```
+
+### Algorithm Not Supported for Dataset
+
+**Error**: `NotImplementedError` when running algorithm on certain datasets
+
+**Cause**: The `random` algorithm only supports datasets starting with `rcabench` or `rcaeval`.
+
+**Solution**: Use a compatible dataset:
+
+```bash
+# These work with random algorithm
+./main.py eval single random rcabench_filtered <datapack-name>
+./main.py eval single random rcaeval_re2_tt <datapack-name>
+
+# Check available datasets
+./main.py eval show-datasets
+```
+
+### Import Errors
+
+**Error**: `ModuleNotFoundError` or import errors
+
+**Solution**: Verify installation with correct Python version:
+
+```bash
+# Check Python version (must be 3.10+)
+python --version
+
+# Reinstall dependencies
+uv sync --all-extras
+
+# Verify installation
+./main.py self test
+```
+
+### Permission Errors
+
+**Error**: Permission denied when accessing data directory
+
+**Solution**: Check file permissions and JuiceFS mount:
+
+```bash
+# Check JuiceFS mount status
+mount | grep juicefs
+
+# Remount if necessary
+sudo juicefs mount redis://10.10.10.119:6379/1 /mnt/jfs -d
+
+# Check data directory permissions
+ls -la data/
+```
 
 For more help, see [Troubleshooting](../troubleshooting).
