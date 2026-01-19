@@ -3,8 +3,6 @@ title: Dataset Creator Guide
 weight: 2
 ---
 
-# Dataset Creator Guide
-
 Welcome to the Dataset Creator path! This guide helps you create high-quality datasets through intelligent fault injection experiments in microservices systems.
 
 ## What You'll Learn

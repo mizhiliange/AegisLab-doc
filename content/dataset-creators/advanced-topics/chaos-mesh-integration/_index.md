@@ -3,7 +3,6 @@ title: Chaos Mesh Integration
 weight: 3
 ---
 
-# Chaos Mesh Integration
 
 Deep dive into how AegisLab integrates with Chaos Mesh for fault injection.
 

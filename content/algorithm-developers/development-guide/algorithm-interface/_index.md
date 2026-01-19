@@ -3,8 +3,6 @@ title: Algorithm Interface
 weight: 1
 ---
 
-# Algorithm Interface
-
 Complete reference for implementing RCA algorithms using the standardized interface.
 
 ## Base Class

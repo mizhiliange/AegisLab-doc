@@ -3,8 +3,6 @@ title: Monitoring & Collection
 weight: 3
 ---
 
-# Monitoring & Collection
-
 Track fault injection progress and monitor data collection quality.
 
 ## Sections

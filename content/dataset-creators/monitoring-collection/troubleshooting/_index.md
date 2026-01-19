@@ -3,8 +3,6 @@ title: Troubleshooting
 weight: 3
 ---
 
-# Troubleshooting Collection Issues
-
 Common problems during fault injection and data collection.
 
 ## No Traces Collected

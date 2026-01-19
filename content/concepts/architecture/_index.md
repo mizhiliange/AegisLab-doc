@@ -3,8 +3,6 @@ title: Architecture
 weight: 1
 ---
 
-# System Architecture
-
 Detailed architecture of the AegisLab ecosystem and how components interact.
 
 ## High-Level Architecture

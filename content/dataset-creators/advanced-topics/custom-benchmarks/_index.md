@@ -3,8 +3,6 @@ title: Custom Benchmarks
 weight: 1
 ---
 
-# Custom Benchmarks
-
 Integrate AegisLab with your own microservices applications.
 
 ## Overview

@@ -3,8 +3,6 @@ title: Dataset Catalog
 weight: 3
 ---
 
-# Dataset Catalog
-
 Available datasets for algorithm evaluation.
 
 ## TrainTicket Datasets

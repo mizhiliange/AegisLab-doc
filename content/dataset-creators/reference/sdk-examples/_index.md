@@ -3,8 +3,6 @@ title: SDK Examples
 weight: 3
 ---
 
-# SDK Examples
-
 Common code examples for using the AegisLab Python SDK.
 
 ## Setup

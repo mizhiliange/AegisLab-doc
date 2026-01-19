@@ -3,8 +3,6 @@ title: Track Progress
 weight: 1
 ---
 
-# Track Progress
-
 Monitor fault injection execution and data collection progress.
 
 ## Prerequisites

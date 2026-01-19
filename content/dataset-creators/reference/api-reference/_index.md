@@ -3,8 +3,6 @@ title: API Reference
 weight: 1
 ---
 
-# API Reference
-
 Complete AegisLab API reference for fault injection and dataset management.
 
 ## Base URL

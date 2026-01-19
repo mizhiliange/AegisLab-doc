@@ -3,8 +3,6 @@ title: Fault Catalog
 weight: 2
 ---
 
-# Fault Catalog
-
 Complete catalog of available fault types and their parameters.
 
 ## Network Faults

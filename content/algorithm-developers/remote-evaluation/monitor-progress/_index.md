@@ -3,8 +3,6 @@ title: Monitor Progress
 weight: 3
 ---
 
-# Monitor Progress
-
 Track the execution status of your remote evaluation tasks.
 
 ## Prerequisites

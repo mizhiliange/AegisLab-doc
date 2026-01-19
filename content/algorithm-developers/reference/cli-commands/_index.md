@@ -3,8 +3,6 @@ title: CLI Commands
 weight: 1
 ---
 
-# CLI Commands Reference
-
 Complete reference for rcabench-platform command-line interface.
 
 ## Main Command

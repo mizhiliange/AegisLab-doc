@@ -3,8 +3,6 @@ title: HandlerNode Format
 weight: 3
 ---
 
-# HandlerNode Format Reference
-
 Complete reference for the HandlerNode structure used in fault injection requests.
 
 ## Overview

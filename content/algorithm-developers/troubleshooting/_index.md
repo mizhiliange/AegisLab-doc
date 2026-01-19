@@ -3,8 +3,6 @@ title: Troubleshooting
 weight: 7
 ---
 
-# Troubleshooting
-
 Common issues and solutions for algorithm development.
 
 ## Sections

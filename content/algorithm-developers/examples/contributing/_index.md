@@ -3,8 +3,6 @@ title: Contributing
 weight: 3
 ---
 
-# Contributing Your Algorithm
-
 Share your RCA algorithm with the community through the rca-algo-contrib repository.
 
 ## Overview

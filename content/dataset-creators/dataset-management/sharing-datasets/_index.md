@@ -3,8 +3,6 @@ title: Sharing Datasets
 weight: 4
 ---
 
-# Sharing Datasets
-
 Make your datasets available to the research community.
 
 ## Overview

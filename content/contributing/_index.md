@@ -3,8 +3,6 @@ title: Contributing
 weight: 5
 ---
 
-# Contributing to AegisLab
-
 Thank you for your interest in contributing to the AegisLab ecosystem! This guide will help you get started.
 
 ## Ways to Contribute

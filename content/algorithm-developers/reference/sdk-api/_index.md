@@ -3,8 +3,6 @@ title: SDK API
 weight: 2
 ---
 
-# Python SDK API Reference
-
 Complete API reference for the AegisLab Python SDK.
 
 ## Installation

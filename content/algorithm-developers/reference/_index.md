@@ -3,8 +3,6 @@ title: Reference
 weight: 6
 ---
 
-# Reference Documentation
-
 Complete reference for algorithm development, CLI commands, and SDK APIs.
 
 ## Sections

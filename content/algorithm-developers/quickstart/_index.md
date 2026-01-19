@@ -3,8 +3,6 @@ title: Quickstart
 weight: 1
 ---
 
-# Algorithm Developer Quickstart
-
 Get started with RCA algorithm development in under 15 minutes.
 
 ## Prerequisites

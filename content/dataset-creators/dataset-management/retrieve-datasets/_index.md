@@ -3,8 +3,6 @@ title: Retrieve Datasets
 weight: 1
 ---
 
-# Retrieve Datasets
-
 Download and access datasets created through fault injection.
 
 ## Prerequisites

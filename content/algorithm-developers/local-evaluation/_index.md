@@ -3,8 +3,6 @@ title: Local Evaluation
 weight: 3
 ---
 
-# Local Evaluation
-
 Test and evaluate your RCA algorithms locally before submitting for remote execution.
 
 ## Overview

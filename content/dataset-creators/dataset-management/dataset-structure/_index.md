@@ -3,8 +3,6 @@ title: Dataset Structure
 weight: 2
 ---
 
-# Dataset Structure
-
 Understanding the organization and format of collected datasets.
 
 ## Directory Structure

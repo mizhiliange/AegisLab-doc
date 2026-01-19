@@ -3,8 +3,6 @@ title: Using AegisLab
 weight: 3
 ---
 
-# Using AegisLab
-
 Learn how to interact with AegisLab for fault injection and dataset creation.
 
 ## Topics

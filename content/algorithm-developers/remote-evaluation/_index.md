@@ -3,8 +3,6 @@ title: Remote Evaluation
 weight: 4
 ---
 
-# Remote Evaluation
-
 Submit your algorithm for remote execution on AegisLab's Kubernetes infrastructure.
 
 ## Overview

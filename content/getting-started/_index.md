@@ -3,8 +3,6 @@ title: Getting Started
 weight: 1
 ---
 
-# Getting Started with AegisLab
-
 Welcome to the AegisLab ecosystem! This guide helps you understand the system architecture and choose the right path for your needs.
 
 ## What is AegisLab?

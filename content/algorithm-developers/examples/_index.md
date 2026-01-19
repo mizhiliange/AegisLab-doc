@@ -3,8 +3,6 @@ title: Examples
 weight: 5
 ---
 
-# Algorithm Examples
-
 Learn from real RCA algorithm implementations in the ecosystem.
 
 ## Overview

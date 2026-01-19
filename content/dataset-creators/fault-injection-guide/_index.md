@@ -3,8 +3,6 @@ title: Fault Injection Guide
 weight: 2
 ---
 
-# Fault Injection Guide
-
 This guide covers the fundamentals of fault injection in the AegisLab ecosystem, including fault types, parameters, and best practices for creating high-quality datasets.
 
 ## Topics

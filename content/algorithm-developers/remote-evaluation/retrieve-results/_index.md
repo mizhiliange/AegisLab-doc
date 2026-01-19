@@ -3,8 +3,6 @@ title: Retrieve Results
 weight: 4
 ---
 
-# Retrieve Results
-
 Download evaluation metrics and outputs from completed remote executions.
 
 ## Prerequisites

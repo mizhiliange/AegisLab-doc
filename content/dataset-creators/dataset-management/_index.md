@@ -3,8 +3,6 @@ title: Dataset Management
 weight: 4
 ---
 
-# Dataset Management
-
 Retrieve, organize, and share datasets created through fault injection.
 
 ## Sections

@@ -3,8 +3,6 @@ title: Submit Execution
 weight: 2
 ---
 
-# Submit Execution
-
 Create and submit evaluation tasks for remote execution on AegisLab infrastructure.
 
 ## Prerequisites

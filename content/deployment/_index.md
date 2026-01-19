@@ -3,8 +3,6 @@ title: Deployment Guide
 weight: 4
 ---
 
-# Deployment Guide
-
 Complete guide for deploying the AegisLab ecosystem components.
 
 ## Overview

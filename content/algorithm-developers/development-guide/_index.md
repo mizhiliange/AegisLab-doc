@@ -3,7 +3,6 @@ title: Development Guide
 weight: 2
 ---
 
-# Algorithm Development Guide
 
 This guide covers the essential concepts and patterns for developing RCA algorithms with rcabench-platform.
 

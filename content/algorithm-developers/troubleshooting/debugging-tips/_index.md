@@ -3,8 +3,6 @@ title: Debugging Tips
 weight: 2
 ---
 
-# Debugging Tips
-
 Strategies and techniques for debugging RCA algorithms.
 
 ## General Debugging Approach

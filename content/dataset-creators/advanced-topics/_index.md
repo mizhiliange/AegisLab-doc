@@ -3,8 +3,6 @@ title: Advanced Topics
 weight: 5
 ---
 
-# Advanced Topics
-
 Advanced techniques for fault injection and dataset creation.
 
 ## Sections

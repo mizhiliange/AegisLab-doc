@@ -3,8 +3,6 @@ title: Quickstart
 weight: 1
 ---
 
-# Dataset Creator Quickstart
-
 Submit your first fault injection and monitor data collection in under 10 minutes.
 
 ## Prerequisites

@@ -3,8 +3,6 @@ title: Observability Data
 weight: 2
 ---
 
-# Observability Data
-
 Understanding the traces, metrics, and logs collected during fault injection.
 
 ## Data Types

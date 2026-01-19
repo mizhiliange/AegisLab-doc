@@ -252,6 +252,20 @@ hugo && htmltest
 7. **Add troubleshooting**: Help users solve common problems
 8. **Update cross-references**: When moving or renaming pages, update all links
 
+
+## Anti pattern
+
+The H1 heading is not needed. Titile is the same to the H1 heading, this will leads to duplicated content in the page.
+
+```
+---
+title: Chaos Mesh Integration
+weight: 3
+---
+
+# Chaos Mesh Integration
+```
+
 ## Troubleshooting
 
 ### Hugo Build Fails

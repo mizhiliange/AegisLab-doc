@@ -3,8 +3,6 @@ title: Genetic Algorithms
 weight: 2
 ---
 
-# Genetic Algorithms with Pandora
-
 Use Pandora's genetic algorithm for intelligent fault injection scheduling.
 
 ## Overview

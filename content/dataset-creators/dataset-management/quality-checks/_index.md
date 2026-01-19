@@ -3,8 +3,6 @@ title: Quality Checks
 weight: 3
 ---
 
-# Quality Checks
-
 Validate dataset quality before using for algorithm evaluation.
 
 ## Overview

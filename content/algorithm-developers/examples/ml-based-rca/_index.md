@@ -3,8 +3,6 @@ title: ML-Based RCA
 weight: 2
 ---
 
-# ML-Based RCA Algorithm
-
 An example machine learning-based root cause analysis algorithm using graph neural networks.
 
 ## Overview

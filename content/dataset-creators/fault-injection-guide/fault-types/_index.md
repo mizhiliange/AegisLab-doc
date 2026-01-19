@@ -3,8 +3,6 @@ title: Fault Types
 weight: 2
 ---
 
-# Fault Types Reference
-
 Complete reference for all fault types supported by AegisLab. Each fault type includes parameters, examples, and use cases.
 
 ## Network Faults

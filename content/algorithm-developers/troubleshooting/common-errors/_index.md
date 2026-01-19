@@ -3,8 +3,6 @@ title: Common Errors
 weight: 1
 ---
 
-# Common Errors
-
 Frequently encountered errors and their solutions.
 
 ## Installation Errors

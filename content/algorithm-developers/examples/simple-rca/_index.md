@@ -3,8 +3,6 @@ title: Simple RCA
 weight: 1
 ---
 
-# Simple RCA Algorithm
-
 A basic heuristic-based root cause analysis algorithm that demonstrates the core concepts.
 
 ## Overview

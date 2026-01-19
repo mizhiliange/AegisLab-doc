@@ -3,8 +3,6 @@ title: Upload Algorithm
 weight: 1
 ---
 
-# Upload Algorithm to Harbor
-
 Push your containerized algorithm to the Harbor registry for remote execution.
 
 ## Prerequisites

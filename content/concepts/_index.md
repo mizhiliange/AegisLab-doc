@@ -3,8 +3,6 @@ title: Core Concepts
 weight: 3
 ---
 
-# Core Concepts
-
 Understanding the fundamental concepts behind the AegisLab ecosystem.
 
 ## Topics

@@ -45,9 +45,9 @@
   --aegis-shadow-card-hover: 0 12px 48px rgba(0, 217, 255, 0.2);
 }
 
-/* Global enhancements */
+/* Global enhancements - keep default fonts for readability */
 body {
-  font-family: 'JetBrains Mono', monospace;
+  /* Don't override default font - keep Hextra's readable fonts */
   background: var(--aegis-bg-darker);
   color: var(--aegis-text-primary);
 }
@@ -185,7 +185,7 @@ body {
 
 /* Hero Subtitle Enhancement */
 .hextra-hero-subtitle {
-  font-family: 'JetBrains Mono', monospace;
+  /* Use default font for better readability */
   font-size: clamp(1rem, 2vw, 1.25rem);
   font-weight: 400;
   color: var(--aegis-text-secondary);
@@ -413,7 +413,7 @@ body {
   box-shadow: 0 8px 32px rgba(131, 56, 236, 0.3);
 }
 
-.hextra-feature-card h3 {
+.hextra-home-content .hextra-feature-card h3 {
   font-family: 'Orbitron', sans-serif;
   font-size: 1.25rem;
   font-weight: 600;
@@ -421,14 +421,14 @@ body {
   margin-bottom: 0.75rem;
 }
 
-.hextra-feature-card p {
+.hextra-home-content .hextra-feature-card p {
   color: var(--aegis-text-secondary);
   font-size: 0.95rem;
   line-height: 1.6;
 }
 
-/* Section Headers */
-h2 {
+/* Section Headers - Only on landing page */
+.hextra-home-content h2 {
   font-family: 'Syne', sans-serif;
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 700;
@@ -441,7 +441,7 @@ h2 {
   display: inline-block;
 }
 
-h2::after {
+.hextra-home-content h2::after {
   content: '';
   position: absolute;
   bottom: -10px;
@@ -638,8 +638,8 @@ h2::after {
   line-height: 1.5;
 }
 
-/* Feature cards in grid - enhanced */
-.hextra-feature-card h3 {
+/* Feature cards in grid - enhanced - Only on landing page */
+.hextra-home-content .hextra-feature-card h3 {
   font-family: 'Orbitron', sans-serif;
   font-size: 1rem;
   font-weight: 600;
@@ -647,7 +647,7 @@ h2::after {
   margin: 0;
 }
 
-.hextra-feature-card p {
+.hextra-home-content .hextra-feature-card p {
   font-size: 0.875rem;
   color: var(--aegis-text-secondary);
   margin: 0;
@@ -746,7 +746,7 @@ html:not(.dark) .hextra-feature-card {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
-/* Typography adjustments for sections */
-.hx\\:text-center.hx\\:text-lg {
+/* Typography adjustments for sections - Only on landing page */
+.hextra-home-content .hx\\:text-center.hx\\:text-lg {
   font-family: 'JetBrains Mono', monospace;
 }

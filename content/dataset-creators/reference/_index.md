@@ -3,8 +3,6 @@ title: Reference
 weight: 6
 ---
 
-# Reference Documentation
-
 Complete reference for fault injection, APIs, and fault catalog.
 
 ## Sections

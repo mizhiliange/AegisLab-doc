@@ -3,8 +3,6 @@ title: Algorithm Developer Guide
 weight: 1
 ---
 
-# Algorithm Developer Guide
-
 Welcome to the Algorithm Developer path! This guide helps you develop and evaluate root cause analysis (RCA) algorithms using the AegisLab ecosystem.
 
 ## What You'll Learn

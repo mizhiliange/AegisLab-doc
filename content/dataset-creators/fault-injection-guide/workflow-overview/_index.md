@@ -3,7 +3,6 @@ title: Workflow Overview
 weight: 1
 ---
 
-# Fault Injection Workflow Overview
 
 Complete end-to-end workflow for creating datasets through fault injection.
 

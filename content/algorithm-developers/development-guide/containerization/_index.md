@@ -3,7 +3,6 @@ title: Containerization
 weight: 3
 ---
 
-# Containerization
 
 Package your RCA algorithm as a Docker container for remote execution on AegisLab.
 

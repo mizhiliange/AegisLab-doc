@@ -3,8 +3,6 @@ title: Data Formats
 weight: 2
 ---
 
-# Data Formats
-
 Understanding the input data formats is essential for developing RCA algorithms. All data is provided in standardized parquet files with consistent schemas.
 
 ## Input Data Structure
