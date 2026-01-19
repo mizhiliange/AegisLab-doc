@@ -26,32 +26,56 @@ The `input_folder` contains standardized parquet files:
 
 ```
 input_folder/
-├── trace.parquet          # Distributed trace data
-├── log.parquet            # Application logs (optional)
-├── metrics.parquet        # Time-series metrics (optional)
-├── metrics_sli.parquet    # SLI metrics (optional)
-├── injection.json         # Ground truth fault injection info
-└── conclusion.json        # Expected root causes (labels)
+├── abnormal_traces.parquet           # Distributed trace data during fault
+├── normal_traces.parquet             # Baseline trace data before fault
+├── abnormal_logs.parquet             # Application logs during fault (optional)
+├── normal_logs.parquet               # Baseline logs before fault (optional)
+├── abnormal_metrics.parquet          # Time-series metrics during fault (optional)
+├── normal_metrics.parquet            # Baseline metrics before fault (optional)
+├── abnormal_metrics_sum.parquet      # Sum metrics during fault (optional)
+├── abnormal_metrics_histogram.parquet # Histogram metrics during fault (optional)
+├── metrics_sli.parquet               # SLI metrics (optional)
+├── injection.json                    # Ground truth fault injection info
+└── conclusion.parquet                # Span-level performance comparison
 ```
+
+**Note**: The dataset provides both abnormal (during fault) and normal (baseline) data for comparison. Most algorithms focus on the abnormal data files.
 
 ## Trace Data Schema
 
-The `trace.parquet` file contains distributed traces with the following schema:
+The `abnormal_traces.parquet` file contains distributed traces with the following schema:
 
 | Column | Type | Description |
 |--------|------|-------------|
+| `time` | Datetime(ns, UTC) | Span start timestamp |
 | `trace_id` | String | Unique identifier for the trace |
 | `span_id` | String | Unique identifier for the span |
-| `parent_span_id` | String | Parent span ID (null for root spans) |
+| `parent_span_id` | String | Parent span ID (empty string for root spans) |
+| `span_name` | String | Operation/endpoint name |
+| `attr.span_kind` | String | INTERNAL, SERVER, CLIENT, PRODUCER, CONSUMER |
 | `service_name` | String | Name of the service that created the span |
-| `operation_name` | String | Operation/endpoint name |
-| `start_time` | Int64 | Start timestamp (nanoseconds) |
-| `end_time` | Int64 | End timestamp (nanoseconds) |
-| `duration` | Int64 | Duration in nanoseconds |
-| `status_code` | String | Status: OK, ERROR, UNSET |
-| `status_message` | String | Error message if status is ERROR |
-| `span_kind` | String | INTERNAL, SERVER, CLIENT, PRODUCER, CONSUMER |
-| `attributes` | String | JSON-encoded span attributes |
+| `duration` | UInt64 | Duration in nanoseconds |
+| `attr.status_code` | String | Status: Ok, Error, Unset |
+| `attr.k8s.pod.name` | String | Kubernetes pod name |
+| `attr.k8s.service.name` | String | Kubernetes service name |
+| `attr.k8s.namespace.name` | String | Kubernetes namespace |
+| `attr.http.request.content_length` | UInt64 | HTTP request size in bytes |
+| `attr.http.response.content_length` | UInt64 | HTTP response size in bytes |
+| `attr.http.request.method` | String | HTTP method (GET, POST, etc.) |
+| `attr.http.response.status_code` | UInt16 | HTTP status code (200, 500, etc.) |
+
+**Sample data** (from rcabench_filtered dataset):
+
+```
+time: 2025-08-07 18:55:13.006381566 UTC
+trace_id: 884e7b3d6eb50948a1d7702c9169e0...
+span_id: eb33ccdeefb81189
+parent_span_id: (empty - root span)
+span_name: HTTP GET http://ts-ui-dashboard...
+service_name: loadgenerator
+duration: 6844377 (nanoseconds)
+attr.status_code: Ok
+```
 
 ### Example: Reading Traces
 
@@ -59,17 +83,17 @@ The `trace.parquet` file contains distributed traces with the following schema:
 import polars as pl
 
 # Read trace data from input folder
-traces = pl.read_parquet(args.input_folder / "trace.parquet")
+traces = pl.read_parquet(args.input_folder / "abnormal_traces.parquet")
 
 # Filter error spans
-errors = traces.filter(pl.col("status_code") == "ERROR")
+errors = traces.filter(pl.col("attr.status_code") == "Error")
 
 # Calculate service error rates
 error_rates = (
     traces
     .group_by("service_name")
     .agg([
-        pl.col("status_code").eq("ERROR").sum().alias("error_count"),
+        pl.col("attr.status_code").eq("Error").sum().alias("error_count"),
         pl.count().alias("total_count")
     ])
     .with_columns(
@@ -81,29 +105,48 @@ error_rates = (
 
 ## Metrics Data Schema
 
-The `metrics.parquet` file contains time-series metrics:
+The `abnormal_metrics.parquet` file contains time-series metrics:
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `timestamp` | Int64 | Metric timestamp (nanoseconds) |
-| `service_name` | String | Service that emitted the metric |
-| `metric_name` | String | Name of the metric |
-| `metric_type` | String | GAUGE, COUNTER, HISTOGRAM |
+| `time` | Datetime(ns, UTC) | Metric timestamp |
+| `metric` | String | Name of the metric (e.g., "container.cpu.usage") |
 | `value` | Float64 | Metric value |
-| `labels` | String | JSON-encoded labels/tags |
+| `service_name` | String | Service that emitted the metric |
+| `attr.k8s.node.name` | String | Kubernetes node name |
+| `attr.k8s.namespace.name` | String | Kubernetes namespace |
+| `attr.k8s.statefulset.name` | String | StatefulSet name (if applicable) |
+| `attr.k8s.deployment.name` | String | Deployment name (if applicable) |
+| `attr.k8s.replicaset.name` | String | ReplicaSet name |
+| `attr.k8s.pod.name` | String | Pod name |
+| `attr.k8s.container.name` | String | Container name |
+| `attr.destination_workload` | String | Destination workload for network metrics |
+| `attr.source_workload` | String | Source workload for network metrics |
+| `attr.destination` | String | Destination for network metrics |
+| `attr.source` | String | Source for network metrics |
+
+**Sample data** (from rcabench_filtered dataset):
+
+```
+time: 2025-08-07 18:55:13.019864982 UTC
+metric: container.cpu.usage
+value: 0.035307
+service_name: ts-food-service
+attr.k8s.pod.name: ts-food-service-7d9f8b5c4d-xyz
+```
 
 ### Example: Reading Metrics
 
 ```python
 # Read metrics from input folder
-metrics_path = args.input_folder / "metrics.parquet"
+metrics_path = args.input_folder / "abnormal_metrics.parquet"
 if metrics_path.exists():
     metrics = pl.read_parquet(metrics_path)
 
     # Get CPU usage by service
     cpu_usage = (
         metrics
-        .filter(pl.col("metric_name") == "system.cpu.utilization")
+        .filter(pl.col("metric") == "container.cpu.usage")
         .group_by("service_name")
         .agg(pl.mean("value").alias("avg_cpu"))
         .sort("avg_cpu", descending=True)
@@ -112,31 +155,47 @@ if metrics_path.exists():
 
 ## Logs Data Schema
 
-The `log.parquet` file contains structured logs:
+The `abnormal_logs.parquet` file contains structured logs:
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `timestamp` | Int64 | Log timestamp (nanoseconds) |
+| `time` | Datetime(ns, UTC) | Log timestamp |
 | `trace_id` | String | Associated trace ID (if available) |
 | `span_id` | String | Associated span ID (if available) |
+| `level` | String | DEBUG, INFO, WARN, ERROR, FATAL |
 | `service_name` | String | Service that emitted the log |
-| `severity` | String | DEBUG, INFO, WARN, ERROR, FATAL |
 | `message` | String | Log message |
-| `attributes` | String | JSON-encoded log attributes |
+| `attr.k8s.pod.name` | String | Kubernetes pod name |
+| `attr.k8s.service.name` | String | Kubernetes service name |
+| `attr.k8s.namespace.name` | String | Kubernetes namespace |
+| `attr.template_id` | UInt16 | Log template identifier |
+| `attr.log_template` | String | Log template pattern |
+
+**Sample data** (from rcabench_filtered dataset):
+
+```
+time: 2025-08-07 18:56:27.893 UTC
+trace_id: ebb8c911b293f1209764...
+span_id: f23507c4af6f3980
+level: INFO
+service_name: ts-contacts-service
+message: findContactsByAccountId Query ...
+attr.log_template: findContactsByAccountId Query ...
+```
 
 ### Example: Reading Logs
 
 ```python
 # Read logs from input folder
-log_path = args.input_folder / "log.parquet"
+log_path = args.input_folder / "abnormal_logs.parquet"
 if log_path.exists():
     logs = pl.read_parquet(log_path)
 
     # Find error logs
     error_logs = (
         logs
-        .filter(pl.col("severity").is_in(["ERROR", "FATAL"]))
-        .sort("timestamp")
+        .filter(pl.col("level").is_in(["ERROR", "FATAL"]))
+        .sort("time")
     )
 
     # Count errors by service
@@ -150,53 +209,114 @@ if log_path.exists():
 
 ## Ground Truth Schema
 
+### injection.json
+
 The `injection.json` file contains fault injection metadata:
 
 ```json
 {
-  "fault_type": "network_delay",
-  "target_service": "ts-order-service",
-  "target_operation": "/api/orders",
-  "start_time": 1234567890000000000,
-  "end_time": 1234567950000000000,
-  "parameters": {
-    "delay": "100ms",
-    "jitter": "10ms"
-  }
+  "benchmark": "clickhouse",
+  "created_at": "2025-08-07T18:55:12.029Z",
+  "description": "Fault for task 5cea6db4-96bb-4105-b2fb-9db4bb21056d",
+  "start_time": "2025-08-07T18:55:13Z",
+  "end_time": "2025-08-07T18:59:12Z",
+  "fault_type": 28,
+  "injection_name": "ts0-ts-auth-service-stress-jv8m9r",
+  "ground_truth": {
+    "service": ["ts-auth-service"],
+    "pod": ["ts-auth-service-5dd97d5ccd-rvsh8"],
+    "container": ["ts-auth-service"],
+    "function": ["auth.entity.User.getPassword"],
+    "metric": ["memory"],
+    "span": null
+  },
+  "task_id": "5cea6db4-96bb-4105-b2fb-9db4bb21056d"
 }
+```
+
+**Key fields:**
+- `ground_truth.service`: List of root cause services (primary label for evaluation)
+- `ground_truth.pod`: Specific pod(s) affected
+- `ground_truth.function`: Method/function where fault was injected
+- `ground_truth.metric`: Type of fault (memory, cpu, network, etc.)
+- `start_time` / `end_time`: Fault injection time window
+- `fault_type`: Numeric fault type identifier
+
+### conclusion.parquet
+
+The `conclusion.parquet` file contains span-level performance comparison between normal and abnormal periods:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `SpanName` | String | Span/operation name |
+| `Issues` | String | JSON-encoded issues detected |
+| `AbnormalAvgDuration` | Float64 | Average duration during fault (seconds) |
+| `NormalAvgDuration` | Float64 | Average duration before fault (seconds) |
+| `AbnormalSuccRate` | Float64 | Success rate during fault |
+| `NormalSuccRate` | Float64 | Success rate before fault |
+| `AbnormalP90` | Float64 | 90th percentile latency during fault |
+| `NormalP90` | Float64 | 90th percentile latency before fault |
+| `AbnormalP95` | Float64 | 95th percentile latency during fault |
+| `NormalP95` | Float64 | 95th percentile latency before fault |
+| `AbnormalP99` | Float64 | 99th percentile latency during fault |
+| `NormalP99` | Float64 | 99th percentile latency before fault |
+
+**Sample data:**
+
+```
+SpanName: HTTP POST http://ts-ui-dashboard...
+AbnormalAvgDuration: 0.461801
+NormalAvgDuration: 0.698477
+AbnormalSuccRate: 1.0
+NormalSuccRate: 1.0
 ```
 
 ### Example: Reading Ground Truth
 
 ```python
 import json
+import polars as pl
 
 # Read injection metadata
 with open(args.input_folder / "injection.json") as f:
     injection = json.load(f)
 
-# Get target service
-target_service = injection["target_service"]
-print(f"Ground truth root cause: {target_service}")
+# Get target service (ground truth root cause)
+target_services = injection["ground_truth"]["service"]
+print(f"Ground truth root cause: {target_services}")
 
 # Get fault time window
-fault_start = injection["start_time"]
+fault_start = injection["start_time"]  # ISO 8601 string
 fault_end = injection["end_time"]
+
+# Read conclusion for span-level analysis
+conclusion = pl.read_parquet(args.input_folder / "conclusion.parquet")
+
+# Find spans with significant performance degradation
+degraded_spans = conclusion.filter(
+    pl.col("AbnormalAvgDuration") > pl.col("NormalAvgDuration") * 1.5
+).sort("AbnormalAvgDuration", descending=True)
 ```
 
-## Working with JSON Attributes
+## Working with Attributes
 
-Many columns store JSON-encoded data. Use Polars' JSON parsing:
+Span and metric attributes are directly available as columns with `attr.` prefix:
 
 ```python
-# Parse span attributes
-traces_with_attrs = traces.with_columns(
-    pl.col("attributes").str.json_decode().alias("attrs_parsed")
+# Access HTTP status code directly
+traces_with_http = traces.filter(
+    pl.col("attr.http.response.status_code") >= 400
 )
 
-# Extract specific attribute
-http_status = traces_with_attrs.with_columns(
-    pl.col("attrs_parsed").struct.field("http.status_code").alias("http_status")
+# Group by pod
+pod_stats = traces.group_by("attr.k8s.pod.name").agg([
+    pl.count().alias("span_count"),
+    pl.mean("duration").alias("avg_duration")
+])
+
+# Filter by namespace
+ns_traces = traces.filter(
+    pl.col("attr.k8s.namespace.name") == "ts0"
 )
 ```
 
@@ -206,12 +326,12 @@ For large datasets, use lazy evaluation to avoid loading everything into memory:
 
 ```python
 # Scan instead of read
-traces = pl.scan_parquet(args.input_folder / "trace.parquet")
+traces = pl.scan_parquet(args.input_folder / "abnormal_traces.parquet")
 
 # Build query without executing
 query = (
     traces
-    .filter(pl.col("status_code") == "ERROR")
+    .filter(pl.col("attr.status_code") == "Error")
     .group_by("service_name")
     .agg(pl.count().alias("error_count"))
     .sort("error_count", descending=True)
@@ -227,15 +347,25 @@ Not all files are guaranteed to be present:
 
 ```python
 # Check if metrics file exists
-metrics_path = args.input_folder / "metrics.parquet"
+metrics_path = args.input_folder / "abnormal_metrics.parquet"
 if metrics_path.exists():
     metrics = pl.read_parquet(metrics_path)
 else:
     metrics = None
 
-# Handle null values in traces
+# Check if logs file exists
+logs_path = args.input_folder / "abnormal_logs.parquet"
+if logs_path.exists():
+    logs = pl.read_parquet(logs_path)
+else:
+    logs = None
+
+# Handle empty parent_span_id (root spans)
 traces = traces.with_columns(
-    pl.col("parent_span_id").fill_null("ROOT")
+    pl.when(pl.col("parent_span_id") == "")
+    .then(pl.lit("ROOT"))
+    .otherwise(pl.col("parent_span_id"))
+    .alias("parent_span_id")
 )
 ```
 
@@ -245,20 +375,27 @@ Filter data to the fault injection window:
 
 ```python
 import json
+from datetime import datetime
 
 # Get fault time range from injection metadata
 with open(args.input_folder / "injection.json") as f:
     injection = json.load(f)
 
-fault_start = injection["start_time"]
-fault_end = injection["end_time"]
+# Parse ISO 8601 timestamps
+fault_start = datetime.fromisoformat(injection["start_time"].replace("Z", "+00:00"))
+fault_end = datetime.fromisoformat(injection["end_time"].replace("Z", "+00:00"))
 
-# Filter traces to fault window
-traces = pl.read_parquet(args.input_folder / "trace.parquet")
+# Read traces
+traces = pl.read_parquet(args.input_folder / "abnormal_traces.parquet")
+
+# Filter traces to fault window (time column is already datetime)
 fault_traces = traces.filter(
-    (pl.col("start_time") >= fault_start) &
-    (pl.col("start_time") <= fault_end)
+    (pl.col("time") >= fault_start) &
+    (pl.col("time") <= fault_end)
 )
+
+# Alternative: The abnormal_traces.parquet already contains only fault window data
+# So you typically don't need to filter by time
 ```
 
 ## Output Format
