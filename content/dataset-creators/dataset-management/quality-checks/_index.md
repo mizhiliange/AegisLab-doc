@@ -56,7 +56,7 @@ def check_completeness(dataset_path, expected_count):
     """Check if all datapacks are complete."""
 
     missing_files = []
-    required_files = ["traces.parquet", "metrics.parquet", "logs.parquet", "ground_truth.parquet"]
+    required_files = ["trace.parquet", "metrics.parquet", "log.parquet", "ground_truth.parquet"]
 
     for i in range(expected_count):
         datapack_path = f"{dataset_path}/{i}"
@@ -93,7 +93,7 @@ def check_schema(datapack_path):
     errors = []
 
     # Check traces schema
-    traces = pl.read_parquet(f"{datapack_path}/traces.parquet")
+    traces = pl.read_parquet(f"{datapack_path}/trace.parquet")
     required_trace_cols = ["trace_id", "span_id", "service_name", "start_time", "end_time", "status_code"]
     missing = [col for col in required_trace_cols if col not in traces.columns]
     if missing:
@@ -107,7 +107,7 @@ def check_schema(datapack_path):
         errors.append(f"Metrics missing columns: {missing}")
 
     # Check logs schema
-    logs = pl.read_parquet(f"{datapack_path}/logs.parquet")
+    logs = pl.read_parquet(f"{datapack_path}/log.parquet")
     required_log_cols = ["timestamp", "service_name", "level", "message"]
     missing = [col for col in required_log_cols if col not in logs.columns]
     if missing:
@@ -143,7 +143,7 @@ def check_data_quality(datapack_path):
     issues = []
 
     # Load data
-    traces = pl.read_parquet(f"{datapack_path}/traces.parquet")
+    traces = pl.read_parquet(f"{datapack_path}/trace.parquet")
     gt = pl.read_parquet(f"{datapack_path}/ground_truth.parquet")
 
     # Check trace count
@@ -264,7 +264,7 @@ def analyze_distributions(dataset_path, datapack_count):
     service_counts = []
 
     for i in range(datapack_count):
-        traces = pl.read_parquet(f"{dataset_path}/{i}/traces.parquet")
+        traces = pl.read_parquet(f"{dataset_path}/{i}/trace.parquet")
 
         trace_counts.append(len(traces))
 
@@ -306,7 +306,7 @@ def detect_outliers(dataset_path, datapack_count):
     trace_counts = []
 
     for i in range(datapack_count):
-        traces = pl.read_parquet(f"{dataset_path}/{i}/traces.parquet")
+        traces = pl.read_parquet(f"{dataset_path}/{i}/trace.parquet")
         trace_counts.append((i, len(traces)))
 
     import numpy as np
@@ -340,7 +340,7 @@ Verify fault injection had measurable impact:
 def validate_fault_impact(datapack_path):
     """Validate fault injection impact."""
 
-    traces = pl.read_parquet(f"{datapack_path}/traces.parquet")
+    traces = pl.read_parquet(f"{datapack_path}/trace.parquet")
     gt = pl.read_parquet(f"{datapack_path}/ground_truth.parquet")
 
     fault_service = gt["root_cause_service"][0]

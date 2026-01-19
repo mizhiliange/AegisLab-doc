@@ -147,12 +147,74 @@ Before getting started, ensure you have:
   - Chaos Mesh installed
   - Sufficient resources (see [Deployment Guide](../deployment))
 
+## Environment Configuration
+
+AegisLab uses environment variables for flexible deployment across different environments. Before getting started, configure your environment:
+
+### Create Environment File
+
+Copy the example environment file and configure it for your setup:
+
+```bash
+# Copy example file
+cp .env.example .env
+
+# Edit with your values
+nano .env
+```
+
+### Required Environment Variables
+
+```bash
+# AegisLab API Configuration
+AEGISLAB_API_URL=http://10.10.10.220:8080
+
+# TrainTicket Gateway Configuration
+TRAINTICKET_GATEWAY_URL=http://10.10.10.220:30080
+
+# JuiceFS Configuration (for dataset storage)
+JUICEFS_REDIS_URL=redis://10.10.10.119:6379/1
+
+# Environment Mode (dev, test, prod)
+ENV_MODE=prod
+```
+
+### Environment Modes
+
+- **dev**: Local development with localhost endpoints
+- **test**: Development cluster (10.10.10.161)
+- **prod**: Production cluster (10.10.10.220)
+
+### Using Environment Variables
+
+In Python code:
+
+```python
+import os
+from rcabench.openapi import Configuration
+
+config = Configuration(
+    host=os.getenv("AEGISLAB_API_URL", "http://10.10.10.220:8080")
+)
+```
+
+In shell scripts:
+
+```bash
+# Mount JuiceFS
+sudo juicefs mount ${JUICEFS_REDIS_URL} /mnt/jfs -d
+
+# Access API
+curl ${AEGISLAB_API_URL}/api/v1/health
+```
+
 ## Next Steps
 
-1. **Choose your path**: Select [Algorithm Developer](../algorithm-developers) or [Dataset Creator](../dataset-creators)
-2. **Follow the quickstart**: Complete the 10-15 minute quickstart guide for your role
-3. **Explore examples**: Review example algorithms or fault injection scenarios
-4. **Deploy infrastructure**: If needed, follow the [Deployment Guide](../deployment)
+1. **Configure environment**: Set up your `.env` file with appropriate values
+2. **Choose your path**: Select [Algorithm Developer](../algorithm-developers) or [Dataset Creator](../dataset-creators)
+3. **Follow the quickstart**: Complete the 10-15 minute quickstart guide for your role
+4. **Explore examples**: Review example algorithms or fault injection scenarios
+5. **Deploy infrastructure**: If needed, follow the [Deployment Guide](../deployment)
 
 ## Getting Help
 

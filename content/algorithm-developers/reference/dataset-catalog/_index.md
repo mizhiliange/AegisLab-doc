@@ -98,21 +98,21 @@ All datasets follow the same structure:
 ```
 dataset-name/
 ├── 0/
-│   ├── traces.parquet
+│   ├── trace.parquet
 │   ├── metrics.parquet
-│   ├── logs.parquet
+│   ├── log.parquet
 │   └── ground_truth.parquet
 ├── 1/
-│   ├── traces.parquet
+│   ├── trace.parquet
 │   ├── metrics.parquet
-│   ├── logs.parquet
+│   ├── log.parquet
 │   └── ground_truth.parquet
 └── ...
 ```
 
 ### File Formats
 
-**traces.parquet**
+**trace.parquet**
 - Distributed traces with spans
 - Columns: trace_id, span_id, parent_span_id, service_name, operation_name, start_time, end_time, status_code, attributes
 
@@ -120,7 +120,7 @@ dataset-name/
 - Time-series metrics
 - Columns: timestamp, service_name, metric_name, value, labels
 
-**logs.parquet**
+**log.parquet**
 - Structured logs
 - Columns: timestamp, service_name, level, message, attributes
 
@@ -153,8 +153,9 @@ dataset-name/
 ### Via JuiceFS (Recommended)
 
 ```bash
-# Mount JuiceFS
-sudo juicefs mount redis://10.10.10.119:6379/1 /mnt/jfs -d
+# Mount JuiceFS (use your JUICEFS_REDIS_URL from .env)
+sudo juicefs mount ${JUICEFS_REDIS_URL} /mnt/jfs -d
+# Default: redis://10.10.10.119:6379/1
 
 # Create symlink
 cd rcabench-platform/data

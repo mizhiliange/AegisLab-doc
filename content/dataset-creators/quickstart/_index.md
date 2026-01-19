@@ -34,7 +34,8 @@ pip install -e .
 Set your AegisLab API endpoint and credentials:
 
 ```bash
-export AEGISLAB_API_URL="http://10.10.10.220:8080"
+# Set your AegisLab API URL (see .env.example for defaults)
+export AEGISLAB_API_URL="http://10.10.10.220:8080"  # Default production endpoint
 export AEGISLAB_TOKEN="your-api-token"
 ```
 
@@ -44,7 +45,7 @@ Or configure in your Python code:
 from rcabench.openapi import Configuration, ApiClient
 
 config = Configuration(
-    host="http://10.10.10.220:8080",
+    host="${AEGISLAB_API_URL}",  # Use environment variable, default: http://10.10.10.220:8080
     api_key={"Authorization": "Bearer your-api-token"}
 )
 ```
@@ -138,10 +139,11 @@ dataset_api.download_dataset(dataset_id=response.dataset_id, output_path="./data
 ```
 
 The dataset will contain:
-- `traces.parquet`: Distributed traces with spans
+- `trace.parquet`: Distributed traces with spans
 - `metrics.parquet`: Time-series metrics
-- `logs.parquet`: Structured logs
-- `ground_truth.parquet`: Fault injection metadata
+- `log.parquet`: Structured logs
+- `injection.json`: Fault injection metadata
+- `conclusion.json`: Expected root causes
 
 ## Next Steps
 

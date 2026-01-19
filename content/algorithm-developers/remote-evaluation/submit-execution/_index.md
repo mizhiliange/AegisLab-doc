@@ -22,8 +22,8 @@ Create and submit evaluation tasks for remote execution on AegisLab infrastructu
 from rcabench.openapi import ApiClient, Configuration, AlgorithmApi
 from rcabench.openapi.models import DtoSubmitExecutionReq
 
-# Configure API client
-config = Configuration(host="http://10.10.10.220:8080")
+# Configure API client (use your AEGISLAB_API_URL from .env)
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
 client = ApiClient(config)
 api = AlgorithmApi(client)
 

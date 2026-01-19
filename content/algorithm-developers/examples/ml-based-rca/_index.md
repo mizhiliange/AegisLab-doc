@@ -213,7 +213,7 @@ def prepare_training_data(dataset_path):
     training_samples = []
 
     for datapack_id in range(100):  # Assuming 100 datapacks
-        traces = pl.read_parquet(f"{dataset_path}/{datapack_id}/traces.parquet")
+        traces = pl.read_parquet(f"{dataset_path}/{datapack_id}/trace.parquet")
         ground_truth = pl.read_parquet(f"{dataset_path}/{datapack_id}/ground_truth.parquet")
 
         # Build graph and extract features

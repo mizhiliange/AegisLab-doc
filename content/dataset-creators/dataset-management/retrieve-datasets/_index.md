@@ -20,7 +20,7 @@ Download and access datasets created through fault injection.
 ```python
 from rcabench.openapi import ApiClient, Configuration, DatasetApi
 
-config = Configuration(host="http://10.10.10.220:8080")
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
 client = ApiClient(config)
 dataset_api = DatasetApi(client)
 
@@ -91,8 +91,9 @@ if task.status == "completed":
 ### Mount JuiceFS
 
 ```bash
-# Mount shared storage
-sudo juicefs mount redis://10.10.10.119:6379/1 /mnt/jfs -d
+# Mount shared storage (use your JUICEFS_REDIS_URL from .env)
+sudo juicefs mount ${JUICEFS_REDIS_URL} /mnt/jfs -d
+# Default: redis://10.10.10.119:6379/1
 
 # Create symlink in your project
 cd your-project/data
@@ -118,7 +119,7 @@ cp -r /mnt/jfs/rcabench-platform-v2/trainticket-custom-001 ./data/
 import polars as pl
 
 # Read directly from JuiceFS mount
-traces = pl.read_parquet("/mnt/jfs/rcabench-platform-v2/trainticket-custom-001/0/traces.parquet")
+traces = pl.read_parquet("/mnt/jfs/rcabench-platform-v2/trainticket-custom-001/0/trace.parquet")
 ```
 
 ## Dataset Structure
@@ -128,14 +129,14 @@ Downloaded datasets follow this structure:
 ```
 trainticket-custom-001/
 ├── 0/
-│   ├── traces.parquet
+│   ├── trace.parquet
 │   ├── metrics.parquet
-│   ├── logs.parquet
+│   ├── log.parquet
 │   └── ground_truth.parquet
 ├── 1/
-│   ├── traces.parquet
+│   ├── trace.parquet
 │   ├── metrics.parquet
-│   ├── logs.parquet
+│   ├── log.parquet
 │   └── ground_truth.parquet
 ├── ...
 └── metadata.json
@@ -164,7 +165,7 @@ trainticket-custom-001/
 import polars as pl
 
 # Load traces from specific datapack
-traces = pl.read_parquet("data/trainticket-custom-001/0/traces.parquet")
+traces = pl.read_parquet("data/trainticket-custom-001/0/trace.parquet")
 
 print(f"Loaded {len(traces)} spans")
 print(traces.head())
@@ -349,7 +350,7 @@ def verify_dataset(dataset_path, expected_count):
     """Verify dataset completeness."""
     for i in range(expected_count):
         datapack_path = f"{dataset_path}/{i}"
-        required_files = ["traces.parquet", "metrics.parquet", "logs.parquet", "ground_truth.parquet"]
+        required_files = ["trace.parquet", "metrics.parquet", "log.parquet", "ground_truth.parquet"]
 
         for file in required_files:
             file_path = f"{datapack_path}/{file}"

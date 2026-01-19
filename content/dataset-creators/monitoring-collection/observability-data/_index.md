@@ -204,9 +204,9 @@ Verify data consistency:
 import polars as pl
 
 # Load collected data
-traces = pl.read_parquet("dataset/0/traces.parquet")
+traces = pl.read_parquet("dataset/0/trace.parquet")
 metrics = pl.read_parquet("dataset/0/metrics.parquet")
-logs = pl.read_parquet("dataset/0/logs.parquet")
+logs = pl.read_parquet("dataset/0/log.parquet")
 
 # Check time ranges
 trace_start = traces["start_time"].min()
@@ -267,9 +267,9 @@ All data is stored in Apache Parquet format:
 ```
 dataset-name/
 └── 0/
-    ├── traces.parquet      (15 MB)
+    ├── trace.parquet      (15 MB)
     ├── metrics.parquet     (8 MB)
-    ├── logs.parquet        (12 MB)
+    ├── log.parquet        (12 MB)
     └── ground_truth.parquet (1 KB)
 ```
 
@@ -281,7 +281,7 @@ Validate parquet schema:
 import polars as pl
 
 # Check traces schema
-traces = pl.read_parquet("dataset/0/traces.parquet")
+traces = pl.read_parquet("dataset/0/trace.parquet")
 expected_columns = [
     "trace_id", "span_id", "parent_span_id",
     "service_name", "operation_name",
@@ -310,14 +310,15 @@ dataset_api.download_dataset(
 
 # Load data
 import polars as pl
-traces = pl.read_parquet("./data/trainticket-custom-001/0/traces.parquet")
+traces = pl.read_parquet("./data/trainticket-custom-001/0/trace.parquet")
 ```
 
 ### Via JuiceFS
 
 ```bash
-# Mount JuiceFS
-sudo juicefs mount redis://10.10.10.119:6379/1 /mnt/jfs -d
+# Mount JuiceFS (use your JUICEFS_REDIS_URL from .env)
+sudo juicefs mount ${JUICEFS_REDIS_URL} /mnt/jfs -d
+# Default: redis://10.10.10.119:6379/1
 
 # Access data
 ls /mnt/jfs/rcabench-platform-v2/trainticket-custom-001/0/

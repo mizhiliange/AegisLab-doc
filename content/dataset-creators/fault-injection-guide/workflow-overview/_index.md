@@ -304,7 +304,7 @@ traces_df = pl.DataFrame({
     "status_code": [...],
     # ... other columns
 })
-traces_df.write_parquet("traces.parquet")
+traces_df.write_parquet("trace.parquet")
 
 # Metrics
 metrics_df = pl.DataFrame({
@@ -333,10 +333,10 @@ Check data completeness:
 def validate_dataset(datapack_path):
     """Validate dataset completeness."""
     checks = {
-        "traces_exist": os.path.exists(f"{datapack_path}/traces.parquet"),
+        "traces_exist": os.path.exists(f"{datapack_path}/trace.parquet"),
         "gt_exist": os.path.exists(f"{datapack_path}/ground_truth.parquet"),
-        "traces_not_empty": len(pl.read_parquet(f"{datapack_path}/traces.parquet")) > 0,
-        "has_errors": len(pl.read_parquet(f"{datapack_path}/traces.parquet")
+        "traces_not_empty": len(pl.read_parquet(f"{datapack_path}/trace.parquet")) > 0,
+        "has_errors": len(pl.read_parquet(f"{datapack_path}/trace.parquet")
                           .filter(pl.col("status_code") == "ERROR")) > 0
     }
     return all(checks.values())
@@ -349,14 +349,14 @@ def validate_dataset(datapack_path):
 ```
 trainticket-experiment-v1/
 ├── 0/
-│   ├── traces.parquet
+│   ├── trace.parquet
 │   ├── metrics.parquet
-│   ├── logs.parquet
+│   ├── log.parquet
 │   └── ground_truth.parquet
 ├── 1/
-│   ├── traces.parquet
+│   ├── trace.parquet
 │   ├── metrics.parquet
-│   ├── logs.parquet
+│   ├── log.parquet
 │   └── ground_truth.parquet
 └── metadata.json
 ```

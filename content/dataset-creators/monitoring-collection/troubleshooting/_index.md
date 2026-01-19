@@ -350,7 +350,7 @@ Data collected but quality is poor:
 ```python
 import polars as pl
 
-traces = pl.read_parquet("dataset/0/traces.parquet")
+traces = pl.read_parquet("dataset/0/trace.parquet")
 
 # Check for nulls
 null_counts = traces.null_count()
@@ -395,7 +395,7 @@ Error: Connection timeout while streaming events
 
 ```python
 config = Configuration(
-    host="http://10.10.10.220:8080",
+    host="${AEGISLAB_API_URL}",  # Default: http://10.10.10.220:8080
     timeout=60  # Increase from default 30s
 )
 ```

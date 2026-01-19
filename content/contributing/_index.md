@@ -336,7 +336,7 @@ func TestGenerateChaos(t *testing.T) {
 # Python tests
 def test_algorithm():
     args = AlgorithmArgs(
-        trace_path="test_data/traces.parquet",
+        trace_path="test_data/trace.parquet",
         ground_truth_path="test_data/ground_truth.parquet",
         output_path="output/",
         dataset_name="test",

@@ -19,7 +19,7 @@ Monitor fault injection execution and data collection progress.
 ```python
 from rcabench.openapi import ApiClient, Configuration, TaskApi
 
-config = Configuration(host="http://10.10.10.220:8080")
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
 client = ApiClient(config)
 task_api = TaskApi(client)
 

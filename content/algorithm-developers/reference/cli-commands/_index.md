@@ -242,8 +242,9 @@ Display or modify configuration.
 # Get configuration value
 ./main.py config get api.endpoint
 
-# Set configuration value
-./main.py config set api.endpoint http://10.10.10.220:8080
+# Set configuration value (use your AEGISLAB_API_URL from .env)
+./main.py config set api.endpoint ${AEGISLAB_API_URL}
+# Default: http://10.10.10.220:8080
 ```
 
 ## Environment Variables
@@ -267,7 +268,7 @@ Example configuration:
 
 ```python
 class Config:
-    api_endpoint = "http://10.10.10.220:8080"
+    api_endpoint = "${AEGISLAB_API_URL}"  # Default: http://10.10.10.220:8080
     data_dir = "./data"
     output_dir = "./output"
     default_cpu_limit = "2000m"

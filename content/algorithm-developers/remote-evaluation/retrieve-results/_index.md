@@ -20,7 +20,7 @@ Download evaluation metrics and outputs from completed remote executions.
 ```python
 from rcabench.openapi import ApiClient, Configuration, ResultsApi
 
-config = Configuration(host="http://10.10.10.220:8080")
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
 client = ApiClient(config)
 results_api = ResultsApi(client)
 

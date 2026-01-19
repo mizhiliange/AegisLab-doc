@@ -80,7 +80,7 @@ Register your system with AegisLab:
 from rcabench.openapi import ApiClient, Configuration, BenchmarkApi
 from rcabench.openapi.models import DtoRegisterBenchmarkReq
 
-config = Configuration(host="http://10.10.10.220:8080")
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
 client = ApiClient(config)
 benchmark_api = BenchmarkApi(client)
 

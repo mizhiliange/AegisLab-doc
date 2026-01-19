@@ -47,9 +47,9 @@ Configure the SDK with your AegisLab endpoint:
 ```python
 from rcabench.openapi import Configuration, ApiClient
 
-# Configure API client
+# Configure API client (use your AEGISLAB_API_URL from .env)
 config = Configuration(
-    host="http://10.10.10.220:8080",
+    host="${AEGISLAB_API_URL}",  # Default: http://10.10.10.220:8080
     api_key={"Authorization": "Bearer your-api-token"}
 )
 
@@ -61,7 +61,8 @@ client = ApiClient(config)
 Set environment variables for convenience:
 
 ```bash
-export AEGISLAB_API_URL="http://10.10.10.220:8080"
+# Set in .env file or export directly (see .env.example)
+export AEGISLAB_API_URL="http://10.10.10.220:8080"  # Default production endpoint
 export AEGISLAB_TOKEN="your-api-token"
 ```
 

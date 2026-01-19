@@ -21,9 +21,10 @@ pip install rcabench-openapi
 from rcabench.openapi import ApiClient, Configuration
 
 config = Configuration(
-    host="http://10.10.10.220:8080",
+    host="${AEGISLAB_API_URL}",  # Use environment variable
     api_key={"Authorization": "Bearer your-token"}
 )
+# Default: http://10.10.10.220:8080
 
 client = ApiClient(config)
 ```

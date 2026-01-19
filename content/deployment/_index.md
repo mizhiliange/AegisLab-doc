@@ -192,7 +192,8 @@ Required for:
 For large-scale dataset storage:
 
 ```bash
-sudo juicefs mount redis://10.10.10.119:6379/1 /mnt/jfs -d
+sudo juicefs mount ${JUICEFS_REDIS_URL} /mnt/jfs -d
+# Default: redis://10.10.10.119:6379/1
 ```
 
 ## Monitoring and Observability

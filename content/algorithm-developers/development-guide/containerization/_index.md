@@ -241,7 +241,7 @@ docker build -t my-rca:1.0.0 .
 docker run --rm \
     -v $(pwd)/data:/data \
     my-rca:1.0.0 \
-    /data/traces.parquet \
+    /data/trace.parquet \
     /data/ground_truth.parquet \
     /data/output
 ```
@@ -283,11 +283,11 @@ mkdir -p test_data/output
 docker run --rm \
     -v $(pwd)/test_data:/data \
     my-rca:1.0.0 \
-    /data/traces.parquet \
+    /data/trace.parquet \
     /data/ground_truth.parquet \
     /data/output \
     /data/metrics.parquet \
-    /data/logs.parquet
+    /data/log.parquet
 
 # Check output
 cat test_data/output/result.json

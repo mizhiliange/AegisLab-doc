@@ -56,8 +56,9 @@ Error: Dataset 'trainticket-pandora-v1' not found
 # Check if JuiceFS is mounted
 ls /mnt/jfs/rcabench-platform-v2/
 
-# If not mounted, mount it
-sudo juicefs mount redis://10.10.10.119:6379/1 /mnt/jfs -d
+# If not mounted, mount it (use your JUICEFS_REDIS_URL from .env)
+sudo juicefs mount ${JUICEFS_REDIS_URL} /mnt/jfs -d
+# Default: redis://10.10.10.119:6379/1
 
 # Create symlink
 cd rcabench-platform/data
@@ -81,7 +82,7 @@ Error: Datapack 150 not found in dataset trainticket-pandora-v1
 ### Permission denied reading dataset
 
 ```
-PermissionError: [Errno 13] Permission denied: 'data/trainticket-pandora-v1/0/traces.parquet'
+PermissionError: [Errno 13] Permission denied: 'data/trainticket-pandora-v1/0/trace.parquet'
 ```
 
 **Cause**: Insufficient file permissions.
@@ -91,8 +92,9 @@ PermissionError: [Errno 13] Permission denied: 'data/trainticket-pandora-v1/0/tr
 # Fix permissions
 chmod -R u+r data/
 
-# Or remount JuiceFS with correct permissions
-sudo juicefs mount redis://10.10.10.119:6379/1 /mnt/jfs -d --uid $(id -u) --gid $(id -g)
+# Or remount JuiceFS with correct permissions (use your JUICEFS_REDIS_URL from .env)
+sudo juicefs mount ${JUICEFS_REDIS_URL} /mnt/jfs -d --uid $(id -u) --gid $(id -g)
+# Default: redis://10.10.10.119:6379/1
 ```
 
 ## Algorithm Errors
@@ -228,9 +230,9 @@ Error: 401 Unauthorized
 # Set API token
 export AEGISLAB_TOKEN="your-api-token"
 
-# Or configure in code
+# Or configure in code (use your AEGISLAB_API_URL from .env)
 config = Configuration(
-    host="http://10.10.10.220:8080",
+    host="${AEGISLAB_API_URL}",  # Default: http://10.10.10.220:8080
     api_key={"Authorization": "Bearer your-token"}
 )
 ```

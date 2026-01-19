@@ -43,7 +43,8 @@ For this quickstart, we'll use a small sample dataset. Create a data directory a
 mkdir -p data/sample
 # Sample dataset will be provided - for now, use existing datasets
 # If you have JuiceFS access:
-# sudo juicefs mount redis://10.10.10.119:6379/1 /mnt/jfs -d
+# sudo juicefs mount ${JUICEFS_REDIS_URL} /mnt/jfs -d
+# Default: redis://10.10.10.119:6379/1 (see .env.example)
 # ln -s /mnt/jfs/rcabench-platform-v2 data/
 ```
 
@@ -202,8 +203,9 @@ uv sync --all-extras
 # Check JuiceFS mount status
 mount | grep juicefs
 
-# Remount if necessary
-sudo juicefs mount redis://10.10.10.119:6379/1 /mnt/jfs -d
+# Remount if necessary (use your JUICEFS_REDIS_URL from .env)
+sudo juicefs mount ${JUICEFS_REDIS_URL} /mnt/jfs -d
+# Default: redis://10.10.10.119:6379/1
 
 # Check data directory permissions
 ls -la data/

@@ -98,7 +98,7 @@ from my_algorithm import MyRCA
 import polars as pl
 
 args = AlgorithmArgs(
-    trace_path="data/trainticket-pandora-v1/0/traces.parquet",
+    trace_path="data/trainticket-pandora-v1/0/trace.parquet",
     ground_truth_path="data/trainticket-pandora-v1/0/ground_truth.parquet",
     output_path="output/",
     dataset_name="trainticket-pandora-v1",
@@ -336,7 +336,7 @@ def test_basic_functionality():
         "end_time": [1050, 1150, 2050]
     })
 
-    traces.write_parquet("test_traces.parquet")
+    traces.write_parquet("test_trace.parquet")
 
     # Create ground truth
     gt = pl.DataFrame({"root_cause_service": ["svc-b"]})
@@ -344,7 +344,7 @@ def test_basic_functionality():
 
     # Test algorithm
     args = AlgorithmArgs(
-        trace_path="test_traces.parquet",
+        trace_path="test_trace.parquet",
         ground_truth_path="test_gt.parquet",
         output_path="output/",
         dataset_name="test",
@@ -400,7 +400,7 @@ def test_full_pipeline():
     # Test on multiple datapacks
     for datapack_id in range(5):
         args = AlgorithmArgs(
-            trace_path=f"data/trainticket-pandora-v1/{datapack_id}/traces.parquet",
+            trace_path=f"data/trainticket-pandora-v1/{datapack_id}/trace.parquet",
             ground_truth_path=f"data/trainticket-pandora-v1/{datapack_id}/ground_truth.parquet",
             output_path="output/",
             dataset_name="trainticket-pandora-v1",
@@ -446,7 +446,7 @@ docker build -t my-rca:debug .
 docker run --rm \
     -v $(pwd)/data:/data \
     -v $(pwd)/output:/output \
-    -e TRACE_PATH=/data/trainticket-pandora-v1/0/traces.parquet \
+    -e TRACE_PATH=/data/trainticket-pandora-v1/0/trace.parquet \
     -e GROUND_TRUTH_PATH=/data/trainticket-pandora-v1/0/ground_truth.parquet \
     -e OUTPUT_PATH=/output \
     my-rca:debug

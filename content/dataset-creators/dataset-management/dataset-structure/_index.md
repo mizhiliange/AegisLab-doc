@@ -15,14 +15,14 @@ Each dataset follows a standardized structure:
 dataset-name/
 ├── metadata.json
 ├── 0/
-│   ├── traces.parquet
+│   ├── trace.parquet
 │   ├── metrics.parquet
-│   ├── logs.parquet
+│   ├── log.parquet
 │   └── ground_truth.parquet
 ├── 1/
-│   ├── traces.parquet
+│   ├── trace.parquet
 │   ├── metrics.parquet
-│   ├── logs.parquet
+│   ├── log.parquet
 │   └── ground_truth.parquet
 ├── 2/
 │   └── ...
@@ -78,14 +78,14 @@ Each datapack (numbered directory) represents one fault injection scenario.
 
 Each datapack must contain four parquet files:
 
-1. **traces.parquet**: Distributed traces
+1. **trace.parquet**: Distributed traces
 2. **metrics.parquet**: Time-series metrics
-3. **logs.parquet**: Application logs
+3. **log.parquet**: Application logs
 4. **ground_truth.parquet**: Fault injection metadata
 
 ## File Schemas
 
-### traces.parquet
+### trace.parquet
 
 Distributed tracing data following OpenTelemetry format:
 
@@ -106,7 +106,7 @@ Distributed tracing data following OpenTelemetry format:
 ```python
 import polars as pl
 
-traces = pl.read_parquet("dataset/0/traces.parquet")
+traces = pl.read_parquet("dataset/0/trace.parquet")
 print(traces.head())
 
 # Output:
@@ -146,7 +146,7 @@ print(metrics.head())
 # └────────────┴─────────────────┴──────────────────────────┴────────┴────────────┘
 ```
 
-### logs.parquet
+### log.parquet
 
 Structured application logs:
 
@@ -161,7 +161,7 @@ Structured application logs:
 **Example:**
 
 ```python
-logs = pl.read_parquet("dataset/0/logs.parquet")
+logs = pl.read_parquet("dataset/0/log.parquet")
 print(logs.head())
 
 # Output:
@@ -206,9 +206,9 @@ Typical file sizes per datapack:
 
 | File | Typical Size | Range |
 |------|--------------|-------|
-| traces.parquet | 150 KB | 50 KB - 500 KB |
+| trace.parquet | 150 KB | 50 KB - 500 KB |
 | metrics.parquet | 80 KB | 30 KB - 200 KB |
-| logs.parquet | 120 KB | 40 KB - 300 KB |
+| log.parquet | 120 KB | 40 KB - 300 KB |
 | ground_truth.parquet | 1 KB | 0.5 KB - 2 KB |
 | **Total per datapack** | **~350 KB** | **120 KB - 1 MB** |
 
@@ -257,7 +257,7 @@ print(f"Schema version: {metadata['schema_version']}")
 ```python
 import polars as pl
 
-traces = pl.read_parquet("dataset/0/traces.parquet")
+traces = pl.read_parquet("dataset/0/trace.parquet")
 print(traces.schema)
 
 # Output:
@@ -270,7 +270,7 @@ print(traces.schema)
 def validate_schema(datapack_path):
     """Validate datapack schema."""
 
-    required_files = ["traces.parquet", "metrics.parquet", "logs.parquet", "ground_truth.parquet"]
+    required_files = ["trace.parquet", "metrics.parquet", "log.parquet", "ground_truth.parquet"]
 
     for file in required_files:
         file_path = f"{datapack_path}/{file}"
@@ -282,7 +282,7 @@ def validate_schema(datapack_path):
         # Check schema
         df = pl.read_parquet(file_path)
 
-        if file == "traces.parquet":
+        if file == "trace.parquet":
             required_cols = ["trace_id", "span_id", "service_name", "start_time", "end_time", "status_code"]
             missing = [col for col in required_cols if col not in df.columns]
             if missing:

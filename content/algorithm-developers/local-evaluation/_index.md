@@ -29,8 +29,9 @@ Local evaluation allows you to:
 Mount the shared dataset storage:
 
 ```bash
-# Mount JuiceFS
-sudo juicefs mount redis://10.10.10.119:6379/1 /mnt/jfs -d
+# Mount JuiceFS (use your JUICEFS_REDIS_URL from .env)
+sudo juicefs mount ${JUICEFS_REDIS_URL} /mnt/jfs -d
+# Default: redis://10.10.10.119:6379/1
 
 # Create symlink in your project
 cd rcabench-platform
@@ -220,7 +221,7 @@ Read and examine the input data:
 import polars as pl
 
 # Read trace data
-traces = pl.read_parquet("data/trainticket-pandora-v1/0/traces.parquet")
+traces = pl.read_parquet("data/trainticket-pandora-v1/0/trace.parquet")
 print(traces.head())
 print(traces.describe())
 
@@ -255,11 +256,11 @@ traces = pl.DataFrame({
     "end_time": [1050, 1150, 2050]
 })
 
-traces.write_parquet("test_traces.parquet")
+traces.write_parquet("test_trace.parquet")
 
 # Test algorithm
 args = AlgorithmArgs(
-    trace_path="test_traces.parquet",
+    trace_path="test_trace.parquet",
     ground_truth_path="test_gt.parquet",
     output_path="output/",
     dataset_name="test",
@@ -284,7 +285,7 @@ from rcabench_platform.v2.algorithms import AlgorithmArgs
 from my_algorithm import MyRCAAlgorithm
 
 args = AlgorithmArgs(
-    trace_path="data/trainticket-pandora-v1/0/traces.parquet",
+    trace_path="data/trainticket-pandora-v1/0/trace.parquet",
     ground_truth_path="data/trainticket-pandora-v1/0/ground_truth.parquet",
     output_path="output/",
     dataset_name="trainticket-pandora-v1",
@@ -322,7 +323,7 @@ from my_algorithm import MyRCAAlgorithm
 tracemalloc.start()
 
 args = AlgorithmArgs(
-    trace_path="data/trainticket-pandora-v1/0/traces.parquet",
+    trace_path="data/trainticket-pandora-v1/0/trace.parquet",
     ground_truth_path="data/trainticket-pandora-v1/0/ground_truth.parquet",
     output_path="output/",
     dataset_name="trainticket-pandora-v1",
