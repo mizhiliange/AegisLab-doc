@@ -131,7 +131,7 @@ Register dataset with AegisLab:
 from rcabench.openapi import ApiClient, Configuration, DatasetApi
 from rcabench.openapi.models import DtoRegisterDatasetReq
 
-config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:32080
 client = ApiClient(config)
 dataset_api = DatasetApi(client)
 

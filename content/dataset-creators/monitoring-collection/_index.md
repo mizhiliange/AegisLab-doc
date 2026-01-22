@@ -24,7 +24,7 @@ After submitting a fault injection, you need to:
 ```python
 from rcabench.openapi import ApiClient, Configuration, TaskApi
 
-config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:32080
 client = ApiClient(config)
 task_api = TaskApi(client)
 

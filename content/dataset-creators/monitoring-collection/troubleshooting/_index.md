@@ -393,7 +393,7 @@ Error: Connection timeout while streaming events
 
 ```python
 config = Configuration(
-    host="${AEGISLAB_API_URL}",  # Default: http://10.10.10.220:8080
+    host="${AEGISLAB_API_URL}",  # Default: http://10.10.10.220:32080
     timeout=60  # Increase from default 30s
 )
 ```

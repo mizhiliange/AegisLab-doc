@@ -15,33 +15,34 @@ Monitor fault injection execution and data collection progress.
 ### Get Task Status
 
 ```python
-from rcabench.openapi import ApiClient, Configuration, TaskApi
+from rcabench.openapi import ApiClient, Configuration
+from rcabench.openapi.api import TasksApi
 
-config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:32080
 client = ApiClient(config)
-task_api = TaskApi(client)
+tasks_api = TasksApi(client)
 
 # Get task details
-task = task_api.get_task(task_id="task-abc123")
+response = tasks_api.get_task_by_id(task_id="task-abc123")
+task = response.data
 
-print(f"Status: {task.status}")
-print(f"Progress: {task.progress}%")
-print(f"Phase: {task.current_phase}")
-print(f"Started: {task.started_at}")
-print(f"Elapsed: {task.elapsed_seconds}s")
+print(f"State: {task.state}")  # Pending, Running, Completed, Error, Cancelled
+print(f"Type: {task.type}")
+print(f"Created: {task.created_at}")
 ```
 
-### Task Phases
+### Task States
 
-Fault injection tasks go through these phases:
+Fault injection tasks have these states:
 
-1. **Pending**: Task queued, waiting for execution
-2. **Preparing**: Setting up environment and load generation
-3. **Injecting**: Applying fault to target system
-4. **Collecting**: Gathering traces, metrics, and logs
-5. **Processing**: Converting data to parquet format
-6. **Completed**: Dataset ready for retrieval
-7. **Failed**: Execution failed (check logs)
+| State | Value | Description |
+|-------|-------|-------------|
+| **Cancelled** | -2 | Task was cancelled by user |
+| **Error** | -1 | Task failed with errors |
+| **Pending** | 0 | Task queued, waiting for execution |
+| **Rescheduled** | 1 | Task rescheduled for later execution |
+| **Running** | 2 | Task actively executing (fault injection + data collection) |
+| **Completed** | 3 | Task finished successfully, dataset ready |
 
 ### Stream Real-Time Events
 
@@ -78,18 +79,20 @@ import time
 def wait_for_completion(task_id, poll_interval=10):
     """Wait for task to complete."""
     while True:
-        task = task_api.get_task(task_id=task_id)
+        response = tasks_api.get_task_by_id(task_id=task_id)
+        task = response.data
 
-        print(f"Status: {task.status} - {task.current_phase} ({task.progress}%)")
+        print(f"State: {task.state}")
 
-        if task.status in ["completed", "failed", "cancelled"]:
+        # Check terminal states
+        if task.state in ["Completed", "Error", "Cancelled"]:
             return task
 
         time.sleep(poll_interval)
 
 # Wait for task
 task = wait_for_completion("task-abc123")
-print(f"Final status: {task.status}")
+print(f"Final state: {task.state}")
 ```
 
 ## Using the Web Dashboard
@@ -115,22 +118,27 @@ The dashboard shows:
 # Submit multiple injections
 task_ids = []
 for i in range(10):
-    response = fault_api.submit_injection(injection_req)
-    task_ids.append(response.task_id)
+    response = injections_api.inject_fault(injection_req)
+    for item in response.data:
+        task_ids.append(item.task_id)
 
 # Monitor all tasks
 while task_ids:
     for task_id in task_ids[:]:
-        task = task_api.get_task(task_id=task_id)
+        response = tasks_api.get_task_by_id(task_id=task_id)
+        task = response.data
 
-        if task.status == "completed":
+        if task.state == "Completed":
             print(f"Task {task_id}: Completed")
             task_ids.remove(task_id)
-        elif task.status == "failed":
-            print(f"Task {task_id}: Failed - {task.error_message}")
+        elif task.state == "Error":
+            print(f"Task {task_id}: Error")
+            task_ids.remove(task_id)
+        elif task.state == "Cancelled":
+            print(f"Task {task_id}: Cancelled")
             task_ids.remove(task_id)
         else:
-            print(f"Task {task_id}: {task.status} ({task.progress}%)")
+            print(f"Task {task_id}: {task.state}")
 
     if task_ids:
         time.sleep(10)
@@ -140,11 +148,11 @@ while task_ids:
 
 ```python
 # Get statistics for multiple tasks
-tasks = [task_api.get_task(task_id=tid) for tid in task_ids]
+tasks = [tasks_api.get_task_by_id(task_id=tid).data for tid in task_ids]
 
-completed = sum(1 for t in tasks if t.status == "completed")
-failed = sum(1 for t in tasks if t.status == "failed")
-running = sum(1 for t in tasks if t.status == "running")
+completed = sum(1 for t in tasks if t.state == "Completed")
+failed = sum(1 for t in tasks if t.state == "Error")
+running = sum(1 for t in tasks if t.state == "Running")
 
 print(f"Completed: {completed}/{len(tasks)}")
 print(f"Failed: {failed}/{len(tasks)}")
@@ -156,12 +164,13 @@ print(f"Running: {running}/{len(tasks)}")
 ### Trace Collection
 
 ```python
-task = task_api.get_task(task_id="task-abc123")
+response = tasks_api.get_task_by_id(task_id="task-abc123")
+task = response.data
 
-print(f"Traces collected: {task.traces_collected}")
-print(f"Spans collected: {task.spans_collected}")
-print(f"Error spans: {task.error_spans}")
-print(f"Trace duration: {task.trace_duration_seconds}s")
+# Task metadata contains collection statistics
+print(f"Task ID: {task.id}")
+print(f"State: {task.state}")
+print(f"Type: {task.type}")
 ```
 
 ### Metrics Collection
@@ -232,16 +241,14 @@ Webhook payload:
 
 ## Cancelling Tasks
 
-Cancel a running task:
+Cancel a running task using the API or kubectl:
 
-```python
-# Cancel task
-task_api.cancel_task(task_id="task-abc123")
-
-# Verify cancellation
-task = task_api.get_task(task_id="task-abc123")
-print(f"Status: {task.status}")  # Should be "cancelled"
+```bash
+# Using kubectl to delete the chaos resource
+kubectl delete networkchaos,podchaos,stresschaos -n ts -l task-id=task-abc123
 ```
+
+After cancellation, the task state will be updated to "Cancelled" (-2).
 
 ## Viewing Logs
 

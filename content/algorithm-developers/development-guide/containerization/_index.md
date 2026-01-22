@@ -336,7 +336,7 @@ from rcabench.openapi.models import CreateContainerReq, ContainerType
 import os
 
 # Configure API client
-config = Configuration(host=os.getenv("AEGISLAB_API_URL", "http://10.10.10.220:8080"))
+config = Configuration(host=os.getenv("AEGISLAB_API_URL", "http://10.10.10.220:32080"))
 client = ApiClient(config)
 api = ContainersApi(client)
 

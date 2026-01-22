@@ -5,34 +5,67 @@ weight: 2
 
 Complete reference for all fault types supported by AegisLab. Each fault type includes parameters, examples, and use cases.
 
+## Fault Type Naming
+
+The implementation uses PascalCase names for fault types. The table below shows all supported fault types:
+
+| Category | Fault Type | ChaosType Value | Description |
+|----------|------------|-----------------|-------------|
+| Pod | `PodKill` | 0 | Kill pod |
+| Pod | `PodFailure` | 1 | Pod failure |
+| Pod | `ContainerKill` | 2 | Kill container |
+| Stress | `MemoryStress` | 3 | Memory stress |
+| Stress | `CPUStress` | 4 | CPU stress |
+| HTTP | `HTTPRequestAbort` | 5 | Abort HTTP request |
+| HTTP | `HTTPResponseAbort` | 6 | Abort HTTP response |
+| HTTP | `HTTPRequestDelay` | 7 | Delay HTTP request |
+| HTTP | `HTTPResponseDelay` | 8 | Delay HTTP response |
+| HTTP | `HTTPResponseReplaceBody` | 9 | Replace HTTP response body |
+| HTTP | `HTTPResponsePatchBody` | 10 | Patch HTTP response body |
+| HTTP | `HTTPRequestReplacePath` | 11 | Replace HTTP request path |
+| HTTP | `HTTPRequestReplaceMethod` | 12 | Replace HTTP request method |
+| HTTP | `HTTPResponseReplaceCode` | 13 | Replace HTTP response code |
+| DNS | `DNSError` | 14 | DNS error |
+| DNS | `DNSRandom` | 15 | DNS random response |
+| Time | `TimeSkew` | 16 | Time skew |
+| Network | `NetworkDelay` | 17 | Network delay |
+| Network | `NetworkLoss` | 18 | Network packet loss |
+| Network | `NetworkDuplicate` | 19 | Network packet duplication |
+| Network | `NetworkCorrupt` | 20 | Network packet corruption |
+| Network | `NetworkPartition` | 21 | Network partition |
+| Network | `NetworkBandwidth` | 22 | Network bandwidth limit |
+| IO | `IODelay` | 23 | IO delay |
+| IO | `IOError` | 24 | IO error |
+| JVM | `JVMException` | 25 | JVM exception injection |
+| JVM | `JVMLatency` | 26 | JVM method latency |
+| JVM | `JVMReturn` | 27 | JVM return value modification |
+| JVM | `JVMStress` | 28 | JVM stress |
+| JVM | `JVMGCStress` | 29 | JVM garbage collection stress |
+| JVM | `JVMMySQLLatency` | 30 | JVM MySQL latency |
+| JVM | `JVMMySQLException` | 31 | JVM MySQL exception |
+| JVM | `JVMRuntimeMutator` | 32 | JVM runtime mutator |
+
 ## Network Faults
 
 Network faults simulate communication issues between services.
 
-### Network Delay
+### NetworkDelay
 
 Add latency to network packets between services.
 
-**Handler**: `network_delay`
-
-**Parameters**:
-- `delay` (required): Delay duration (e.g., "100ms", "1s")
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace (default: "ts")
-- `jitter` (optional): Random variation in delay (e.g., "10ms")
-- `correlation` (optional): Correlation between delays (0-100)
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "network_delay",
-    "params": {
-        "delay": "200ms",
-        "target_service": "ts-order-service",
-        "target_namespace": "ts",
-        "jitter": "50ms"
+from rcabench.openapi.models import ChaosNode
+
+network_delay = ChaosNode(
+    name="NetworkDelay",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "delay": ChaosNode(name="200ms"),
+        "jitter": ChaosNode(name="50ms"),  # Optional
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -40,28 +73,20 @@ Add latency to network packets between services.
 - Test timeout handling
 - Study latency propagation in distributed systems
 
-### Network Loss
+### NetworkLoss
 
 Drop network packets randomly.
 
-**Handler**: `network_loss`
-
-**Parameters**:
-- `loss` (required): Packet loss percentage (0-100)
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `correlation` (optional): Correlation between losses (0-100)
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "network_loss",
-    "params": {
-        "loss": "10",
-        "target_service": "ts-payment-service",
-        "correlation": "25"
+network_loss = ChaosNode(
+    name="NetworkLoss",
+    children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
+        "loss": ChaosNode(value=10),  # 10% packet loss
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -69,27 +94,20 @@ Drop network packets randomly.
 - Study impact of unreliable networks
 - Validate error handling
 
-### Network Partition
+### NetworkPartition
 
 Isolate services from each other (split-brain scenarios).
 
-**Handler**: `network_partition`
-
-**Parameters**:
-- `target_service` (required): Service to isolate
-- `target_namespace` (optional): Kubernetes namespace
-- `direction` (optional): "to", "from", or "both" (default: "both")
-- `external_targets` (optional): List of external IPs/domains to block
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "network_partition",
-    "params": {
-        "target_service": "ts-user-service",
-        "direction": "both"
+network_partition = ChaosNode(
+    name="NetworkPartition",
+    children={
+        "service": ChaosNode(name="ts-user-service"),
+        "namespace": ChaosNode(name="ts"),
+        "direction": ChaosNode(name="both"),
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -97,27 +115,20 @@ Isolate services from each other (split-brain scenarios).
 - Validate partition tolerance
 - Study cascading failures
 
-### Network Duplicate
+### NetworkDuplicate
 
 Duplicate network packets.
 
-**Handler**: `network_duplicate`
-
-**Parameters**:
-- `duplicate` (required): Duplication percentage (0-100)
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `correlation` (optional): Correlation between duplications
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "network_duplicate",
-    "params": {
-        "duplicate": "50",
-        "target_service": "ts-order-service"
+network_duplicate = ChaosNode(
+    name="NetworkDuplicate",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "duplicate": ChaosNode(value=50),  # 50% duplication
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -125,27 +136,20 @@ Duplicate network packets.
 - Validate duplicate detection
 - Study message ordering issues
 
-### Network Corrupt
+### NetworkCorrupt
 
 Corrupt network packet data.
 
-**Handler**: `network_corrupt`
-
-**Parameters**:
-- `corrupt` (required): Corruption percentage (0-100)
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `correlation` (optional): Correlation between corruptions
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "network_corrupt",
-    "params": {
-        "corrupt": "5",
-        "target_service": "ts-payment-service"
+network_corrupt = ChaosNode(
+    name="NetworkCorrupt",
+    children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
+        "corrupt": ChaosNode(value=5),  # 5% corruption
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -157,26 +161,19 @@ Corrupt network packet data.
 
 Pod faults simulate container and pod-level failures.
 
-### Pod Kill
+### PodKill
 
 Terminate a pod immediately.
 
-**Handler**: `pod_kill`
-
-**Parameters**:
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `grace_period` (optional): Termination grace period in seconds (default: 0)
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "pod_kill",
-    "params": {
-        "target_service": "ts-order-service",
-        "grace_period": 5
+pod_kill = ChaosNode(
+    name="PodKill",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -184,24 +181,19 @@ Terminate a pod immediately.
 - Validate high availability
 - Study recovery time
 
-### Pod Failure
+### PodFailure
 
 Make pod fail health checks without killing it.
 
-**Handler**: `pod_failure`
-
-**Parameters**:
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "pod_failure",
-    "params": {
-        "target_service": "ts-payment-service"
+pod_failure = ChaosNode(
+    name="PodFailure",
+    children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -209,26 +201,20 @@ Make pod fail health checks without killing it.
 - Study load balancer behavior
 - Validate graceful degradation
 
-### Container Kill
+### ContainerKill
 
 Kill specific container in a pod.
 
-**Handler**: `container_kill`
-
-**Parameters**:
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `container_name` (optional): Specific container to kill
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "container_kill",
-    "params": {
-        "target_service": "ts-user-service",
-        "container_name": "main"
+container_kill = ChaosNode(
+    name="ContainerKill",
+    children={
+        "service": ChaosNode(name="ts-user-service"),
+        "namespace": ChaosNode(name="ts"),
+        "container": ChaosNode(name="main"),  # Optional
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -240,28 +226,21 @@ Kill specific container in a pod.
 
 Stress faults simulate resource exhaustion.
 
-### CPU Stress
+### CPUStress
 
 Consume CPU resources.
 
-**Handler**: `cpu_stress`
-
-**Parameters**:
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `workers` (required): Number of CPU workers
-- `load` (optional): CPU load percentage per worker (0-100)
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "cpu_stress",
-    "params": {
-        "target_service": "ts-order-service",
-        "workers": 2,
-        "load": 80
+cpu_stress = ChaosNode(
+    name="CPUStress",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "workers": ChaosNode(value=2),
+        "load": ChaosNode(value=80),  # 80% CPU load
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -269,26 +248,20 @@ Consume CPU resources.
 - Study performance degradation
 - Validate resource limits
 
-### Memory Stress
+### MemoryStress
 
 Consume memory resources.
 
-**Handler**: `memory_stress`
-
-**Parameters**:
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `size` (required): Memory to consume (e.g., "256MB", "1GB")
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "memory_stress",
-    "params": {
-        "target_service": "ts-payment-service",
-        "size": "512MB"
+memory_stress = ChaosNode(
+    name="MemoryStress",
+    children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
+        "size": ChaosNode(name="512MB"),
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -300,30 +273,22 @@ Consume memory resources.
 
 JVM faults inject failures at the application level (Java services only).
 
-### JVM Exception
+### JVMException
 
 Throw exceptions in specific methods.
 
-**Handler**: `jvm_exception`
-
-**Parameters**:
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `class` (required): Fully qualified class name
-- `method` (required): Method name
-- `exception` (required): Exception class to throw
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "jvm_exception",
-    "params": {
-        "target_service": "ts-order-service",
-        "class": "com.example.OrderService",
-        "method": "createOrder",
-        "exception": "java.lang.RuntimeException"
+jvm_exception = ChaosNode(
+    name="JVMException",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "class": ChaosNode(name="com.example.OrderService"),
+        "method": ChaosNode(name="createOrder"),
+        "exception": ChaosNode(name="java.lang.RuntimeException"),
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -331,30 +296,22 @@ Throw exceptions in specific methods.
 - Study error propagation
 - Validate circuit breakers
 
-### JVM Latency
+### JVMLatency
 
 Add delays to method execution.
 
-**Handler**: `jvm_latency`
-
-**Parameters**:
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `class` (required): Fully qualified class name
-- `method` (required): Method name
-- `latency` (required): Delay duration (milliseconds)
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "jvm_latency",
-    "params": {
-        "target_service": "ts-payment-service",
-        "class": "com.example.PaymentService",
-        "method": "processPayment",
-        "latency": 5000
+jvm_latency = ChaosNode(
+    name="JVMLatency",
+    children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
+        "class": ChaosNode(name="com.example.PaymentService"),
+        "method": ChaosNode(name="processPayment"),
+        "latency": ChaosNode(value=5000),  # 5000ms delay
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -362,30 +319,22 @@ Add delays to method execution.
 - Study latency propagation
 - Validate async processing
 
-### JVM Return Value
+### JVMReturn
 
 Modify method return values.
 
-**Handler**: `jvm_return`
-
-**Parameters**:
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `class` (required): Fully qualified class name
-- `method` (required): Method name
-- `value` (required): Return value to inject
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "jvm_return",
-    "params": {
-        "target_service": "ts-user-service",
-        "class": "com.example.UserService",
-        "method": "getUserBalance",
-        "value": "0"
+jvm_return = ChaosNode(
+    name="JVMReturn",
+    children={
+        "service": ChaosNode(name="ts-user-service"),
+        "namespace": ChaosNode(name="ts"),
+        "class": ChaosNode(name="com.example.UserService"),
+        "method": ChaosNode(name="getUserBalance"),
+        "value": ChaosNode(name="0"),
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -397,30 +346,21 @@ Modify method return values.
 
 HTTP faults inject failures at the HTTP protocol level.
 
-### HTTP Abort
+### HTTPRequestAbort
 
 Return error responses for HTTP requests.
 
-**Handler**: `http_abort`
-
-**Parameters**:
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `status_code` (required): HTTP status code to return (e.g., 500, 503)
-- `path` (optional): URL path pattern to match
-- `percentage` (optional): Percentage of requests to abort (0-100)
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "http_abort",
-    "params": {
-        "target_service": "ts-order-service",
-        "status_code": 503,
-        "path": "/api/orders",
-        "percentage": 50
+http_abort = ChaosNode(
+    name="HTTPRequestAbort",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "code": ChaosNode(value=503),
+        "path": ChaosNode(name="/api/orders"),
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -428,30 +368,21 @@ Return error responses for HTTP requests.
 - Study retry mechanisms
 - Validate fallback behavior
 
-### HTTP Delay
+### HTTPResponseDelay
 
-Add latency to HTTP requests.
+Add latency to HTTP responses.
 
-**Handler**: `http_delay`
-
-**Parameters**:
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `delay` (required): Delay duration (e.g., "1s", "500ms")
-- `path` (optional): URL path pattern to match
-- `percentage` (optional): Percentage of requests to delay
-
-**Example**:
+**ChaosNode Example**:
 ```python
-{
-    "handler": "http_delay",
-    "params": {
-        "target_service": "ts-payment-service",
-        "delay": "2s",
-        "path": "/api/payment",
-        "percentage": 100
+http_delay = ChaosNode(
+    name="HTTPResponseDelay",
+    children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
+        "delay": ChaosNode(name="2s"),
+        "path": ChaosNode(name="/api/payment"),
     }
-}
+)
 ```
 
 **Use Cases**:
@@ -459,61 +390,35 @@ Add latency to HTTP requests.
 - Study latency impact
 - Validate async patterns
 
-### HTTP Replace
-
-Modify HTTP request or response content.
-
-**Handler**: `http_replace`
-
-**Parameters**:
-- `target_service` (required): Target service name
-- `target_namespace` (optional): Kubernetes namespace
-- `path` (optional): URL path pattern to match
-- `replace_body` (optional): New response body
-- `replace_headers` (optional): Headers to modify
-
-**Example**:
-```python
-{
-    "handler": "http_replace",
-    "params": {
-        "target_service": "ts-user-service",
-        "path": "/api/user",
-        "replace_body": '{"error": "Service unavailable"}'
-    }
-}
-```
-
-**Use Cases**:
-- Test data validation
-- Study error message handling
-- Validate content parsing
-
 ## Combining Multiple Faults
 
-You can inject multiple faults simultaneously by providing multiple handler nodes:
+You can inject multiple faults simultaneously using the 2D specs array:
 
 ```python
-injection_req = DtoSubmitInjectionReq(
-    benchmark="trainticket",
-    handler_nodes=[
-        {
-            "handler": "network_delay",
-            "params": {
-                "delay": "100ms",
-                "target_service": "ts-order-service"
-            }
-        },
-        {
-            "handler": "cpu_stress",
-            "params": {
-                "target_service": "ts-payment-service",
-                "workers": 2,
-                "load": 80
-            }
-        }
-    ],
-    duration=60
+from rcabench.openapi.models import SubmitInjectionReq, ChaosNode, ContainerSpec
+
+# Parallel faults (injected simultaneously)
+specs = [[
+    ChaosNode(name="NetworkDelay", children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "delay": ChaosNode(name="100ms"),
+    }),
+    ChaosNode(name="CPUStress", children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
+        "workers": ChaosNode(value=2),
+        "load": ChaosNode(value=80),
+    }),
+]]
+
+request = SubmitInjectionReq(
+    project_name="my-project",
+    benchmark=ContainerSpec(name="trainticket"),
+    pedestal=ContainerSpec(name="loadgenerator"),
+    specs=specs,
+    interval=5,
+    pre_duration=1,
 )
 ```
 
@@ -527,6 +432,6 @@ injection_req = DtoSubmitInjectionReq(
 
 ## Next Steps
 
-- [HandlerNode Format](handler-node-format): Complete parameter reference
-- [Using AegisLab](../using-aegislab): Submit fault injections via API
-- [Best Practices](best-practices): Experiment design guidelines
+- [HandlerNode Format](../handler-node-format): Complete ChaosNode reference
+- [Workflow Overview](../workflow-overview): End-to-end process
+- [Quickstart](../../quickstart): Submit your first injection

@@ -34,7 +34,7 @@ Remote evaluation allows you to:
 from rcabench.openapi import ApiClient, Configuration, AlgorithmApi
 
 # Configure API client (use your AEGISLAB_API_URL from .env)
-config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:32080
 client = ApiClient(config)
 api = AlgorithmApi(client)
 

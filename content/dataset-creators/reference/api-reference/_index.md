@@ -8,7 +8,7 @@ Complete AegisLab API reference for fault injection and dataset management.
 ## Base URL
 
 ```
-${AEGISLAB_API_URL}  # Default: http://10.10.10.220:8080
+${AEGISLAB_API_URL}  # Default: http://10.10.10.220:32080
 ```
 
 ## Authentication
@@ -401,7 +401,7 @@ Configure webhooks for task events:
 from rcabench.openapi import ApiClient, Configuration, FaultInjectionApi
 
 config = Configuration(
-    host="${AEGISLAB_API_URL}",  # Default: http://10.10.10.220:8080
+    host="${AEGISLAB_API_URL}",  # Default: http://10.10.10.220:32080
     api_key={"Authorization": "Bearer your-token"}
 )
 
@@ -425,7 +425,7 @@ curl -X POST ${AEGISLAB_API_URL}/api/v1/fault-injection/submit \
     "handler_nodes": [{"handler": "network_delay", "params": {...}}],
     "duration": 60
   }'
-# Default AEGISLAB_API_URL: http://10.10.10.220:8080
+# Default AEGISLAB_API_URL: http://10.10.10.220:32080
 ```
 
 **Get Task Status:**
@@ -433,7 +433,7 @@ curl -X POST ${AEGISLAB_API_URL}/api/v1/fault-injection/submit \
 ```bash
 curl ${AEGISLAB_API_URL}/api/v1/tasks/task-abc123 \
   -H "Authorization: Bearer your-token"
-# Default AEGISLAB_API_URL: http://10.10.10.220:8080
+# Default AEGISLAB_API_URL: http://10.10.10.220:32080
 ```
 
 ## See Also

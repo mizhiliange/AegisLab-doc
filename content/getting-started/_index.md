@@ -165,7 +165,7 @@ nano .env
 
 ```bash
 # AegisLab API Configuration
-AEGISLAB_API_URL=http://10.10.10.220:8080
+AEGISLAB_API_URL=http://10.10.10.220:32080
 
 # TrainTicket Gateway Configuration
 TRAINTICKET_GATEWAY_URL=http://10.10.10.220:30080
@@ -192,7 +192,7 @@ import os
 from rcabench.openapi import Configuration
 
 config = Configuration(
-    host=os.getenv("AEGISLAB_API_URL", "http://10.10.10.220:8080")
+    host=os.getenv("AEGISLAB_API_URL", "http://10.10.10.220:32080")
 )
 ```
 

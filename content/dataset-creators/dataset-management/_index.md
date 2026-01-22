@@ -25,7 +25,7 @@ After completing fault injection and data collection, you can:
 ```python
 from rcabench.openapi import ApiClient, Configuration, DatasetApi
 
-config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:32080
 client = ApiClient(config)
 dataset_api = DatasetApi(client)
 

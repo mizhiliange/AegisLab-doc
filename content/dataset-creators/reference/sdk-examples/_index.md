@@ -19,7 +19,7 @@ pip install rcabench-openapi
 from rcabench.openapi import ApiClient, Configuration
 
 config = Configuration(
-    host="${AEGISLAB_API_URL}",  # Default: http://10.10.10.220:8080
+    host="${AEGISLAB_API_URL}",  # Default: http://10.10.10.220:32080
     api_key={"Authorization": "Bearer your-api-token"}
 )
 
@@ -350,7 +350,7 @@ from rcabench.openapi.models import DtoSubmitInjectionReq
 import time
 
 # Setup
-config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:32080
 client = ApiClient(config)
 
 fault_api = FaultInjectionApi(client)

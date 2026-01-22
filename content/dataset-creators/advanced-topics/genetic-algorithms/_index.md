@@ -60,7 +60,7 @@ namespace = "ts"
 gateway_url = "${TRAINTICKET_GATEWAY_URL}"  # Default: http://10.10.10.220:30080
 
 [aegislab]
-api_url = "${AEGISLAB_API_URL}"  # Default: http://10.10.10.220:8080
+api_url = "${AEGISLAB_API_URL}"  # Default: http://10.10.10.220:32080
 api_token = "your-token"
 ```
 

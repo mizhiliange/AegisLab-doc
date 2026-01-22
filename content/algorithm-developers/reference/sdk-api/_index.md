@@ -22,7 +22,7 @@ config = Configuration(
     host="${AEGISLAB_API_URL}",  # Use environment variable
     api_key={"Authorization": "Bearer your-token"}
 )
-# Default: http://10.10.10.220:8080
+# Default: http://10.10.10.220:32080
 
 client = ApiClient(config)
 ```
@@ -412,7 +412,7 @@ from rcabench.openapi.models import DtoSubmitExecutionReq
 import time
 
 # Configure client
-config = Configuration(host="http://10.10.10.220:8080")
+config = Configuration(host="http://10.10.10.220:32080")
 client = ApiClient(config)
 
 # Submit execution

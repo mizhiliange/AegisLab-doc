@@ -47,7 +47,7 @@ from rcabench.openapi import Configuration, ApiClient
 
 # Configure API client (use your AEGISLAB_API_URL from .env)
 config = Configuration(
-    host="${AEGISLAB_API_URL}",  # Default: http://10.10.10.220:8080
+    host="${AEGISLAB_API_URL}",  # Default: http://10.10.10.220:32080
     api_key={"Authorization": "Bearer your-api-token"}
 )
 
@@ -60,7 +60,7 @@ Set environment variables for convenience:
 
 ```bash
 # Set in .env file or export directly (see .env.example)
-export AEGISLAB_API_URL="http://10.10.10.220:8080"  # Default production endpoint
+export AEGISLAB_API_URL="http://10.10.10.220:32080"  # Default production endpoint
 export AEGISLAB_TOKEN="your-api-token"
 ```
 
@@ -348,7 +348,7 @@ response = submit_with_retry(api, req)
 ```python
 # Configure custom timeout
 config = Configuration(
-    host="http://10.10.10.220:8080",
+    host="http://10.10.10.220:32080",
     timeout=300  # 5 minutes
 )
 ```
@@ -408,7 +408,7 @@ from rcabench.openapi.models import DtoSubmitInjectionReq
 def main():
     # Configure client
     config = Configuration(
-        host=os.getenv("AEGISLAB_API_URL", "http://10.10.10.220:8080")
+        host=os.getenv("AEGISLAB_API_URL", "http://10.10.10.220:32080")
     )
     client = ApiClient(config)
 

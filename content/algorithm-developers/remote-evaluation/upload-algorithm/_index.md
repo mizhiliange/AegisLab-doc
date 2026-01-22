@@ -32,8 +32,9 @@ docker images | grep my-rca
 Tag your image for the Harbor registry:
 
 ```bash
-# Format: harbor.example.com/project/algorithm:version
-docker tag my-rca:latest harbor.aegislab.io/algorithms/my-rca:v1.0.0
+# Format: registry/namespace/algorithm:version
+# Default registry: 10.10.10.240/library
+docker tag my-rca:latest 10.10.10.240/library/my-rca:v1.0.0
 ```
 
 Use semantic versioning for tags:
@@ -47,38 +48,76 @@ Use semantic versioning for tags:
 Authenticate with the Harbor registry:
 
 ```bash
-docker login harbor.aegislab.io
+docker login 10.10.10.240
 ```
 
 Enter your credentials when prompted:
-- Username: Your Harbor username
-- Password: Your Harbor password or CLI secret
+- Username: admin (default)
+- Password: Harbor12345 (default)
 
 ## Step 4: Push Image
 
 Push the tagged image to Harbor:
 
 ```bash
-docker push harbor.aegislab.io/algorithms/my-rca:v1.0.0
+docker push 10.10.10.240/library/my-rca:v1.0.0
 ```
 
 Push the latest tag as well:
 
 ```bash
-docker tag my-rca:latest harbor.aegislab.io/algorithms/my-rca:latest
-docker push harbor.aegislab.io/algorithms/my-rca:latest
+docker tag my-rca:latest 10.10.10.240/library/my-rca:latest
+docker push 10.10.10.240/library/my-rca:latest
 ```
 
-## Step 5: Verify Upload
+## Step 5: Register Container in AegisLab
 
-Check the image is available in Harbor:
+After pushing to Harbor, register the container with AegisLab:
 
-```bash
-# Using Harbor CLI
-harbor list-images algorithms/my-rca
+```python
+from rcabench.openapi import ApiClient, Configuration
+from rcabench.openapi.api import ContainersApi
+from rcabench.openapi.models import CreateContainerReq, CreateContainerVersionReq
 
-# Or via web UI
-# Navigate to: https://harbor.aegislab.io/harbor/projects/1/repositories
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:32080
+client = ApiClient(config)
+containers_api = ContainersApi(client)
+
+# Create container entry
+container_req = CreateContainerReq(
+    name="my-rca",
+    type="algorithm",  # or "benchmark", "pedestal"
+    description="My RCA algorithm"
+)
+container = containers_api.create_container(container_req)
+
+# Create version
+version_req = CreateContainerVersionReq(
+    tag="v1.0.0",
+    description="Initial release"
+)
+version = containers_api.create_container_version(
+    container_id=container.data.id,
+    request=version_req
+)
+
+print(f"Container registered: {container.data.id}")
+print(f"Version: {version.data.tag}")
+```
+
+## Step 6: Verify Upload
+
+Check the container is available:
+
+```python
+# List containers
+response = containers_api.list_containers()
+for c in response.data.items:
+    print(f"  {c.name}: {c.type}")
+
+# Get specific container
+container = containers_api.get_container_by_id(container_id="your-container-id")
+print(f"Container: {container.data.name}")
 ```
 
 ## Using the CLI Helper
@@ -170,7 +209,7 @@ Error: unauthorized: authentication required
 **Solution**: Login to Harbor registry:
 
 ```bash
-docker login harbor.aegislab.io
+docker login 10.10.10.240
 ```
 
 ### Push Denied

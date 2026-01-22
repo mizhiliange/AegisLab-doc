@@ -3,544 +3,311 @@ title: HandlerNode Format
 weight: 3
 ---
 
-Complete reference for the HandlerNode structure used in fault injection requests.
+Complete reference for the ChaosNode structure used in fault injection requests.
 
 ## Overview
 
-HandlerNode is the core data structure for specifying fault injections in AegisLab. Each HandlerNode defines:
-- **handler**: The type of fault to inject
-- **params**: Fault-specific parameters
+ChaosNode is the core data structure for specifying fault injections in AegisLab. It uses a tree structure where:
+- **name**: The type of fault or parameter name
+- **children**: Nested parameters as child nodes
+- **value**: Numeric value for parameters with ranges
+- **range**: Valid range constraints for values
 
 ## Basic Structure
 
+The SDK uses the `ChaosNode` model:
+
 ```python
-{
-    "handler": "fault_type",  # Required: type of fault
-    "params": {               # Required: fault parameters
-        "target_service": "service-name",
-        "target_namespace": "namespace",
-        # Additional fault-specific parameters
+from rcabench.openapi.models import ChaosNode
+
+# Basic structure
+node = ChaosNode(
+    name="NetworkDelay",  # Fault type name (PascalCase)
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "delay": ChaosNode(name="100ms"),
+        "namespace": ChaosNode(name="ts")
     }
-}
+)
 ```
 
-## Common Parameters
+## ChaosNode Fields
 
-These parameters are common across most fault types:
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Fault type or parameter value |
+| `children` | dict[str, ChaosNode] | Nested parameters |
+| `value` | int | Numeric value (for ranged parameters) |
+| `range` | list[int] | Valid range [min, max] for value |
+| `description` | string | Human-readable description |
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `target_service` | string | Yes | Name of the target service |
-| `target_namespace` | string | No | Kubernetes namespace (default: "ts") |
-| `mode` | string | No | Selection mode: "one", "all", "fixed", "percent" |
-| `value` | string | No | Value for mode (e.g., "2" for fixed, "50" for percent) |
+## Fault Type Names
 
-### Selection Modes
+The implementation uses PascalCase names for fault types:
 
-Control how many pods are affected:
+| Fault Type | ChaosType Value | Description |
+|------------|-----------------|-------------|
+| `PodKill` | 0 | Kill pod |
+| `PodFailure` | 1 | Pod failure |
+| `ContainerKill` | 2 | Kill container |
+| `MemoryStress` | 3 | Memory stress |
+| `CPUStress` | 4 | CPU stress |
+| `HTTPRequestAbort` | 5 | Abort HTTP request |
+| `HTTPResponseAbort` | 6 | Abort HTTP response |
+| `HTTPRequestDelay` | 7 | Delay HTTP request |
+| `HTTPResponseDelay` | 8 | Delay HTTP response |
+| `NetworkDelay` | 17 | Network delay |
+| `NetworkLoss` | 18 | Network packet loss |
+| `NetworkDuplicate` | 19 | Network packet duplication |
+| `NetworkCorrupt` | 20 | Network packet corruption |
+| `JVMException` | 25 | JVM exception injection |
+| `JVMLatency` | 26 | JVM method latency |
+| `JVMReturn` | 27 | JVM return value modification |
 
-```python
-# Affect one random pod (default)
-{"mode": "one"}
-
-# Affect all pods
-{"mode": "all"}
-
-# Affect fixed number of pods
-{"mode": "fixed", "value": "2"}
-
-# Affect percentage of pods
-{"mode": "percent", "value": "50"}
-```
-
-## Network Fault Parameters
+## Network Fault Examples
 
 ### Network Delay
 
 ```python
-{
-    "handler": "network_delay",
-    "params": {
-        "target_service": "ts-order-service",
-        "target_namespace": "ts",
-        "delay": "100ms",           # Required: delay amount
-        "jitter": "10ms",           # Optional: random variation
-        "correlation": "50",        # Optional: correlation (0-100)
-        "direction": "to"           # Optional: "to", "from", "both"
-    }
-}
-```
+from rcabench.openapi.models import ChaosNode
 
-**Parameters**:
-- `delay`: Delay duration (e.g., "50ms", "1s", "500ms")
-- `jitter`: Random variation in delay
-- `correlation`: Correlation between consecutive delays (0-100)
-- `direction`: Traffic direction to affect
+network_delay = ChaosNode(
+    name="NetworkDelay",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "delay": ChaosNode(name="100ms"),
+        "jitter": ChaosNode(name="10ms"),  # Optional
+    }
+)
+```
 
 ### Network Loss
 
 ```python
-{
-    "handler": "network_loss",
-    "params": {
-        "target_service": "ts-payment-service",
-        "loss": "10",               # Required: loss percentage (0-100)
-        "correlation": "25"         # Optional: correlation (0-100)
+network_loss = ChaosNode(
+    name="NetworkLoss",
+    children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
+        "loss": ChaosNode(value=10),  # 10% packet loss
     }
-}
+)
 ```
 
-### Network Partition
-
-```python
-{
-    "handler": "network_partition",
-    "params": {
-        "target_service": "ts-user-service",
-        "direction": "both",        # Optional: "to", "from", "both"
-        "external_targets": [       # Optional: external IPs/domains
-            "8.8.8.8",
-            "example.com"
-        ]
-    }
-}
-```
-
-### Network Duplicate
-
-```python
-{
-    "handler": "network_duplicate",
-    "params": {
-        "target_service": "ts-order-service",
-        "duplicate": "50",          # Required: duplication percentage
-        "correlation": "25"         # Optional: correlation
-    }
-}
-```
-
-### Network Corrupt
-
-```python
-{
-    "handler": "network_corrupt",
-    "params": {
-        "target_service": "ts-payment-service",
-        "corrupt": "5",             # Required: corruption percentage
-        "correlation": "10"         # Optional: correlation
-    }
-}
-```
-
-## Pod Fault Parameters
+## Pod Fault Examples
 
 ### Pod Kill
 
 ```python
-{
-    "handler": "pod_kill",
-    "params": {
-        "target_service": "ts-order-service",
-        "grace_period": 5           # Optional: termination grace period (seconds)
+pod_kill = ChaosNode(
+    name="PodKill",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
     }
-}
+)
 ```
 
 ### Pod Failure
 
 ```python
-{
-    "handler": "pod_failure",
-    "params": {
-        "target_service": "ts-payment-service"
+pod_failure = ChaosNode(
+    name="PodFailure",
+    children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
     }
-}
+)
 ```
 
-### Container Kill
-
-```python
-{
-    "handler": "container_kill",
-    "params": {
-        "target_service": "ts-user-service",
-        "container_name": "main"    # Optional: specific container name
-    }
-}
-```
-
-## Stress Fault Parameters
+## Stress Fault Examples
 
 ### CPU Stress
 
 ```python
-{
-    "handler": "cpu_stress",
-    "params": {
-        "target_service": "ts-order-service",
-        "workers": 2,               # Required: number of CPU workers
-        "load": 80                  # Optional: CPU load per worker (0-100)
+cpu_stress = ChaosNode(
+    name="CPUStress",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "workers": ChaosNode(value=2),
+        "load": ChaosNode(value=80),  # 80% CPU load
     }
-}
+)
 ```
-
-**Parameters**:
-- `workers`: Number of CPU stress workers (typically 1-4)
-- `load`: CPU load percentage per worker (default: 100)
 
 ### Memory Stress
 
 ```python
-{
-    "handler": "memory_stress",
-    "params": {
-        "target_service": "ts-payment-service",
-        "size": "512MB"             # Required: memory to consume
+memory_stress = ChaosNode(
+    name="MemoryStress",
+    children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
+        "size": ChaosNode(name="512MB"),
     }
-}
+)
 ```
 
-**Parameters**:
-- `size`: Memory size (e.g., "256MB", "1GB", "512MB")
-
-## JVM Fault Parameters
+## JVM Fault Examples
 
 ### JVM Exception
 
 ```python
-{
-    "handler": "jvm_exception",
-    "params": {
-        "target_service": "ts-order-service",
-        "class": "com.example.OrderService",        # Required: class name
-        "method": "createOrder",                    # Required: method name
-        "exception": "java.lang.RuntimeException"   # Required: exception class
+jvm_exception = ChaosNode(
+    name="JVMException",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "class": ChaosNode(name="com.example.OrderService"),
+        "method": ChaosNode(name="createOrder"),
+        "exception": ChaosNode(name="java.lang.RuntimeException"),
     }
-}
+)
 ```
-
-**Parameters**:
-- `class`: Fully qualified class name
-- `method`: Method name to inject exception
-- `exception`: Exception class to throw
 
 ### JVM Latency
 
 ```python
-{
-    "handler": "jvm_latency",
-    "params": {
-        "target_service": "ts-payment-service",
-        "class": "com.example.PaymentService",
-        "method": "processPayment",
-        "latency": 5000             # Required: delay in milliseconds
+jvm_latency = ChaosNode(
+    name="JVMLatency",
+    children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
+        "class": ChaosNode(name="com.example.PaymentService"),
+        "method": ChaosNode(name="processPayment"),
+        "latency": ChaosNode(value=5000),  # 5000ms delay
     }
-}
-```
-
-**Parameters**:
-- `latency`: Delay in milliseconds (e.g., 1000 = 1 second)
-
-### JVM Return Value
-
-```python
-{
-    "handler": "jvm_return",
-    "params": {
-        "target_service": "ts-user-service",
-        "class": "com.example.UserService",
-        "method": "getUserBalance",
-        "value": "0"                # Required: return value to inject
-    }
-}
-```
-
-**Parameters**:
-- `value`: Return value as string (will be converted to method's return type)
-
-## HTTP Fault Parameters
-
-### HTTP Abort
-
-```python
-{
-    "handler": "http_abort",
-    "params": {
-        "target_service": "ts-order-service",
-        "status_code": 503,         # Required: HTTP status code
-        "path": "/api/orders",      # Optional: URL path pattern
-        "percentage": 50            # Optional: percentage of requests (0-100)
-    }
-}
-```
-
-**Parameters**:
-- `status_code`: HTTP status code to return (e.g., 500, 503, 404)
-- `path`: URL path pattern to match (supports wildcards)
-- `percentage`: Percentage of requests to abort (default: 100)
-
-### HTTP Delay
-
-```python
-{
-    "handler": "http_delay",
-    "params": {
-        "target_service": "ts-payment-service",
-        "delay": "2s",              # Required: delay duration
-        "path": "/api/payment",     # Optional: URL path pattern
-        "percentage": 100           # Optional: percentage of requests
-    }
-}
-```
-
-### HTTP Replace
-
-```python
-{
-    "handler": "http_replace",
-    "params": {
-        "target_service": "ts-user-service",
-        "path": "/api/user",
-        "replace_body": '{"error": "Service unavailable"}',  # Optional
-        "replace_headers": {                                  # Optional
-            "X-Custom-Header": "value"
-        }
-    }
-}
-```
-
-## Advanced Usage
-
-### Label Selectors
-
-Target specific pods using label selectors:
-
-```python
-{
-    "handler": "network_delay",
-    "params": {
-        "target_service": "ts-order-service",
-        "label_selectors": {
-            "version": "v2",
-            "environment": "production"
-        },
-        "delay": "100ms"
-    }
-}
-```
-
-### Annotation Selectors
-
-Target pods by annotations:
-
-```python
-{
-    "handler": "pod_kill",
-    "params": {
-        "target_service": "ts-payment-service",
-        "annotation_selectors": {
-            "chaos.mesh.org/inject": "true"
-        }
-    }
-}
-```
-
-### External Targets
-
-For network faults affecting external communication:
-
-```python
-{
-    "handler": "network_partition",
-    "params": {
-        "target_service": "ts-order-service",
-        "external_targets": [
-            "database.example.com",
-            "10.0.0.5"
-        ]
-    }
-}
-```
-
-### Port Filtering
-
-Target specific ports:
-
-```python
-{
-    "handler": "network_delay",
-    "params": {
-        "target_service": "ts-order-service",
-        "port": 8080,               # Target specific port
-        "delay": "100ms"
-    }
-}
-```
-
-## Validation Rules
-
-### Required Fields
-
-All HandlerNodes must have:
-- `handler`: Valid fault type
-- `params`: Object with required parameters for the fault type
-- `params.target_service`: Target service name (for most fault types)
-
-### Parameter Constraints
-
-**Percentages**: Must be 0-100
-```python
-"loss": "10"        # Valid
-"loss": "150"       # Invalid: exceeds 100
-```
-
-**Durations**: Must use valid time units
-```python
-"delay": "100ms"    # Valid
-"delay": "1s"       # Valid
-"delay": "100"      # Invalid: missing unit
-```
-
-**Memory Sizes**: Must use valid size units
-```python
-"size": "512MB"     # Valid
-"size": "1GB"       # Valid
-"size": "512"       # Invalid: missing unit
-```
-
-## Complete Examples
-
-### Single Fault
-
-```python
-from rcabench.openapi.models import DtoSubmitInjectionReq
-
-req = DtoSubmitInjectionReq(
-    benchmark="trainticket",
-    handler_nodes=[
-        {
-            "handler": "network_delay",
-            "params": {
-                "delay": "100ms",
-                "target_service": "ts-order-service",
-                "target_namespace": "ts",
-                "jitter": "10ms"
-            }
-        }
-    ],
-    duration=60
 )
 ```
 
-### Multiple Faults
+## HTTP Fault Examples
+
+### HTTP Request Abort
 
 ```python
-req = DtoSubmitInjectionReq(
-    benchmark="trainticket",
-    handler_nodes=[
-        {
-            "handler": "network_delay",
-            "params": {
-                "delay": "100ms",
-                "target_service": "ts-order-service"
-            }
-        },
-        {
-            "handler": "cpu_stress",
-            "params": {
-                "target_service": "ts-payment-service",
-                "workers": 2,
-                "load": 80
-            }
-        },
-        {
-            "handler": "pod_kill",
-            "params": {
-                "target_service": "ts-user-service",
-                "mode": "fixed",
-                "value": "1"
-            }
-        }
-    ],
-    duration=120
+http_abort = ChaosNode(
+    name="HTTPRequestAbort",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "code": ChaosNode(value=503),
+        "path": ChaosNode(name="/api/orders"),
+    }
 )
 ```
 
-### Complex Scenario
+### HTTP Response Delay
 
 ```python
-req = DtoSubmitInjectionReq(
-    benchmark="trainticket",
-    handler_nodes=[
-        {
-            "handler": "network_delay",
-            "params": {
-                "delay": "200ms",
-                "jitter": "50ms",
-                "target_service": "ts-order-service",
-                "direction": "to",
-                "mode": "percent",
-                "value": "50"
-            }
-        },
-        {
-            "handler": "http_abort",
-            "params": {
-                "target_service": "ts-payment-service",
-                "status_code": 503,
-                "path": "/api/payment/*",
-                "percentage": 30
-            }
-        },
-        {
-            "handler": "memory_stress",
-            "params": {
-                "target_service": "ts-user-service",
-                "size": "1GB",
-                "mode": "one"
-            }
-        }
-    ],
-    duration=180,
-    description="Complex multi-fault scenario"
+http_delay = ChaosNode(
+    name="HTTPResponseDelay",
+    children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
+        "delay": ChaosNode(name="2s"),
+        "path": ChaosNode(name="/api/payment"),
+    }
 )
 ```
 
-## Error Messages
+## Submitting Fault Injections
 
-Common validation errors:
+Use the `SubmitInjectionReq` model with a 2D array of ChaosNodes:
 
-**Missing required parameter**:
-```
-Error: Missing required parameter 'delay' for handler 'network_delay'
+```python
+from rcabench.openapi import ApiClient, Configuration
+from rcabench.openapi.api import InjectionsApi
+from rcabench.openapi.models import SubmitInjectionReq, ChaosNode, ContainerSpec
+
+config = Configuration(host="${AEGISLAB_API_URL}")
+client = ApiClient(config)
+api = InjectionsApi(client)
+
+# Define fault specs
+fault_spec = ChaosNode(
+    name="NetworkDelay",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "delay": ChaosNode(name="100ms"),
+    }
+)
+
+# Submit injection
+request = SubmitInjectionReq(
+    project_name="my-project",
+    benchmark=ContainerSpec(name="trainticket"),
+    pedestal=ContainerSpec(name="loadgenerator"),
+    specs=[[fault_spec]],  # 2D array: each sub-array is a batch
+    interval=5,  # Total experiment interval in minutes
+    pre_duration=1,  # Normal data collection before fault (minutes)
+)
+
+response = api.inject_fault(request)
 ```
 
-**Invalid parameter value**:
-```
-Error: Invalid value '150' for parameter 'loss': must be 0-100
+## Multiple Faults (Parallel)
+
+To inject multiple faults in parallel, include them in the same sub-array:
+
+```python
+# Parallel faults (injected simultaneously)
+specs = [[
+    ChaosNode(name="NetworkDelay", children={
+        "service": ChaosNode(name="ts-order-service"),
+        "delay": ChaosNode(name="100ms"),
+    }),
+    ChaosNode(name="CPUStress", children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "workers": ChaosNode(value=2),
+    }),
+]]
 ```
 
-**Unknown handler**:
-```
-Error: Unknown handler type 'invalid_handler'
+## Sequential Faults (Batches)
+
+To inject faults sequentially, use separate sub-arrays:
+
+```python
+# Sequential faults (injected one after another)
+specs = [
+    [ChaosNode(name="NetworkDelay", children={...})],  # Batch 1
+    [ChaosNode(name="CPUStress", children={...})],     # Batch 2
+    [ChaosNode(name="PodKill", children={...})],       # Batch 3
+]
 ```
 
-**Service not found**:
+## Validation
+
+The system validates ChaosNode structures against reference schemas. Common validation errors:
+
+**Missing required child**:
 ```
-Error: Target service 'ts-invalid-service' not found in namespace 'ts'
+Error: Missing required child 'service' for fault type 'NetworkDelay'
+```
+
+**Invalid value range**:
+```
+Error: Value 150 out of range [0, 100] for parameter 'loss'
+```
+
+**Unknown fault type**:
+```
+Error: Unknown fault type 'InvalidFault'
 ```
 
 ## Best Practices
 
-1. **Start simple**: Test single faults before combining
-2. **Use realistic values**: Match production failure patterns
-3. **Specify namespace**: Always include `target_namespace` for clarity
-4. **Add descriptions**: Use the `description` field for documentation
-5. **Validate locally**: Test HandlerNode structure before submission
-6. **Monitor impact**: Start with low percentages and short durations
+1. **Use PascalCase**: Fault type names use PascalCase (e.g., `NetworkDelay`, not `network_delay`)
+2. **Include namespace**: Always specify the target namespace
+3. **Start simple**: Test single faults before combining
+4. **Use realistic values**: Match production failure patterns
+5. **Validate locally**: Test ChaosNode structure before submission
 
 ## Next Steps
 
-- [Fault Types](fault-types): Detailed fault type reference
-- [Using AegisLab](../using-aegislab): Submit injections via SDK
-- [Workflow Overview](workflow-overview): End-to-end process
+- [Fault Types](../fault-types): Detailed fault type reference
+- [Workflow Overview](../workflow-overview): End-to-end process
+- [Quickstart](../../quickstart): Submit your first injection

@@ -128,29 +128,38 @@ network_delay_config = {
 ### Create Injection Request
 
 ```python
-from rcabench.openapi import FaultInjectionApi
-from rcabench.openapi.models import DtoSubmitInjectionReq
+from rcabench.openapi import ApiClient, Configuration
+from rcabench.openapi.api import InjectionsApi
+from rcabench.openapi.models import SubmitInjectionReq, ChaosNode, ContainerSpec
+
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
+client = ApiClient(config)
+
+# Create fault spec using ChaosNode
+fault_spec = ChaosNode(
+    name="NetworkDelay",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "delay": ChaosNode(name="100ms"),
+    }
+)
 
 # Create request
-req = DtoSubmitInjectionReq(
-    benchmark="trainticket",
-    handler_nodes=[
-        {
-            "handler": "network_delay",
-            "params": {
-                "delay": "100ms",
-                "target_service": "ts-order-service"
-            }
-        }
-    ],
-    duration=60,  # Fault duration in seconds
-    description="Network delay experiment"
+req = SubmitInjectionReq(
+    project_name="my-project",
+    benchmark=ContainerSpec(name="trainticket"),
+    pedestal=ContainerSpec(name="loadgenerator"),
+    specs=[[fault_spec]],  # 2D array of ChaosNodes
+    interval=5,  # Total experiment interval in minutes
+    pre_duration=1,  # Normal data collection before fault (minutes)
 )
 
 # Submit
-api = FaultInjectionApi(client)
-response = api.submit_injection(req)
-task_id = response.task_id
+api = InjectionsApi(client)
+response = api.inject_fault(req)
+for item in response.data:
+    print(f"Task ID: {item.task_id}, Trace ID: {item.trace_id}")
 ```
 
 ### Request Validation
@@ -167,15 +176,13 @@ AegisLab validates:
 ### Task Creation
 
 ```python
-# AegisLab creates task record
-task = {
-    "id": "task-123",
-    "status": "pending",
-    "benchmark": "trainticket",
-    "handler_nodes": [...],
-    "duration": 60,
-    "created_at": "2026-01-18T10:00:00Z"
-}
+# AegisLab creates task record with these states:
+# TaskCancelled (-2): Task was cancelled
+# TaskError (-1): Task failed with errors
+# TaskPending (0): Task queued, waiting for execution
+# TaskRescheduled (1): Task rescheduled for later
+# TaskRunning (2): Task actively executing
+# TaskCompleted (3): Task finished successfully
 ```
 
 ### Queue Management
@@ -346,18 +353,19 @@ def validate_dataset(datapack_path):
 ### Dataset Structure
 
 ```
-trainticket-experiment-v1/
-├── 0/
-│   ├── trace.parquet
-│   ├── metrics.parquet
-│   ├── log.parquet
-│   └── ground_truth.parquet
-├── 1/
-│   ├── trace.parquet
-│   ├── metrics.parquet
-│   ├── log.parquet
-│   └── ground_truth.parquet
-└── metadata.json
+rcabench_filtered/
+├── ts0-ts-auth-service-stress-jv8m9r/
+│   ├── abnormal_traces.parquet    # Traces during fault injection
+│   ├── normal_traces.parquet      # Baseline traces before fault
+│   ├── abnormal_metrics.parquet   # Metrics during fault
+│   ├── normal_metrics.parquet     # Baseline metrics
+│   ├── abnormal_logs.parquet      # Logs during fault
+│   ├── normal_logs.parquet        # Baseline logs
+│   ├── injection.json             # Fault metadata and ground truth
+│   └── conclusion.parquet         # Span-level performance comparison
+├── ts0-ts-basic-service-pod-failure-94xplz/
+│   └── ...
+└── ...
 ```
 
 ### Metadata
@@ -379,16 +387,17 @@ trainticket-experiment-v1/
 ### Track Task Status
 
 ```python
-from rcabench.openapi import TaskApi
+from rcabench.openapi.api import TasksApi
 
-task_api = TaskApi(client)
+tasks_api = TasksApi(client)
 
 # Poll for status
 while True:
-    task = task_api.get_task(task_id=task_id)
-    print(f"Status: {task.status}, Progress: {task.progress}%")
+    response = tasks_api.get_task_by_id(task_id=task_id)
+    task = response.data
+    print(f"State: {task.state}")
 
-    if task.status in ["completed", "failed"]:
+    if task.state in ["Completed", "Error", "Cancelled"]:
         break
 
     time.sleep(5)

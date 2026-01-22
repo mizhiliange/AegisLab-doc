@@ -17,27 +17,27 @@ Create and submit evaluation tasks for remote execution on AegisLab infrastructu
 ### Basic Submission
 
 ```python
-from rcabench.openapi import ApiClient, Configuration, AlgorithmApi
-from rcabench.openapi.models import DtoSubmitExecutionReq
+from rcabench.openapi import ApiClient, Configuration
+from rcabench.openapi.api import ExecutionsApi
+from rcabench.openapi.models import RunAlgorithmReq, ContainerSpec
 
 # Configure API client (use your AEGISLAB_API_URL from .env)
-config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:8080
+config = Configuration(host="${AEGISLAB_API_URL}")  # Default: http://10.10.10.220:32080
 client = ApiClient(config)
-api = AlgorithmApi(client)
+executions_api = ExecutionsApi(client)
 
 # Submit execution
-request = DtoSubmitExecutionReq(
-    algorithm_name="my-rca",
-    algorithm_version="v1.0.0",
-    dataset="trainticket-pandora-v1",
-    datapack_start=0,
-    datapack_end=99,
-    description="Evaluation on TrainTicket dataset"
+request = RunAlgorithmReq(
+    algorithm=ContainerSpec(name="my-rca", version="v1.0.0"),
+    dataset_name="rcabench_filtered",
+    datapack_names=["ts0-ts-auth-service-stress-jv8m9r"],
+    project_name="my-project"
 )
 
-response = api.submit_execution(request)
-print(f"Task ID: {response.task_id}")
-print(f"Status: {response.status}")
+response = executions_api.run_algorithm(request)
+print(f"Execution submitted!")
+for item in response.data:
+    print(f"  Execution ID: {item.id}")
 ```
 
 ### Batch Submission
@@ -45,21 +45,24 @@ print(f"Status: {response.status}")
 Submit multiple evaluations at once:
 
 ```python
-datasets = ["trainticket-pandora-v1", "otel-demo-v1", "media-ms-v1"]
-tasks = []
+datasets = ["rcabench_filtered", "rcabench_qps"]
+executions = []
 
 for dataset in datasets:
-    request = DtoSubmitExecutionReq(
-        algorithm_name="my-rca",
-        algorithm_version="v1.0.0",
-        dataset=dataset,
-        datapack_start=0,
-        datapack_end=49
-    )
-    response = api.submit_execution(request)
-    tasks.append(response.task_id)
+    # Get available datapacks for this dataset
+    datapacks_response = datasets_api.list_dataset_versions(dataset_id=dataset)
+    datapack_names = [dp.name for dp in datapacks_response.data.items[:10]]  # First 10
 
-print(f"Submitted {len(tasks)} tasks: {tasks}")
+    request = RunAlgorithmReq(
+        algorithm=ContainerSpec(name="my-rca", version="v1.0.0"),
+        dataset_name=dataset,
+        datapack_names=datapack_names,
+        project_name="my-project"
+    )
+    response = executions_api.run_algorithm(request)
+    executions.extend(response.data)
+
+print(f"Submitted {len(executions)} executions")
 ```
 
 ### Advanced Options
@@ -180,18 +183,20 @@ cd rcabench-platform
 }
 ```
 
-## Checking Task Status
+## Checking Execution Status
 
 ```python
-from rcabench.openapi import TaskApi
+from rcabench.openapi.api import ExecutionsApi
 
-task_api = TaskApi(client)
+executions_api = ExecutionsApi(client)
 
-# Get task details
-task = task_api.get_task(task_id="task-abc123")
-print(f"Status: {task.status}")
-print(f"Progress: {task.progress}%")
-print(f"Completed: {task.completed_datapacks}/{task.total_datapacks}")
+# Get execution details
+response = executions_api.get_execution_by_id(execution_id="exec-abc123")
+execution = response.data
+
+print(f"State: {execution.state}")  # Pending, Running, Completed, Error
+print(f"Algorithm: {execution.algorithm_name}")
+print(f"Dataset: {execution.dataset_name}")
 ```
 
 ## Error Handling
@@ -247,9 +252,11 @@ Error: Dataset 'trainticket-pandora-v1' not found
 **Solution**: List available datasets:
 
 ```python
-dataset_api = DatasetApi(client)
-datasets = dataset_api.list_datasets()
-print([d.name for d in datasets])
+from rcabench.openapi.api import DatasetsApi
+
+datasets_api = DatasetsApi(client)
+response = datasets_api.list_datasets()
+print([d.name for d in response.data.items])
 ```
 
 ### Resource Quota Exceeded
