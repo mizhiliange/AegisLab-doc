@@ -13,6 +13,7 @@ This guide covers the fundamentals of fault injection in the AegisLab ecosystem,
   {{< card link="handler-node-format" title="HandlerNode Format" icon="code" >}}
   {{< card link="intelligent-scheduling" title="Intelligent Scheduling" icon="sparkles" >}}
   {{< card link="best-practices" title="Best Practices" icon="sparkles" >}}
+  {{< card link="adding-new-fault-types" title="Adding New Fault Types" icon="puzzle" >}}
 {{< /cards >}}
 
 ## Overview

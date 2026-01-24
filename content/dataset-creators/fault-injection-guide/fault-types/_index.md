@@ -342,6 +342,97 @@ jvm_return = ChaosNode(
 - Study data validation
 - Validate business logic
 
+### JVMRuntimeMutator
+
+Mutate Java bytecode at runtime using ASM-based transformation. Supports three mutation types:
+
+- **constant**: Replace constant values (integers, floats, strings)
+- **operator**: Mutate arithmetic/logical operators (e.g., `+` to `-`)
+- **string**: Mutate string operations (e.g., empty string, reverse)
+
+**ChaosNode Example (Constant Mutation)**:
+```python
+jvm_mutator_constant = ChaosNode(
+    name="JVMRuntimeMutator",
+    children={
+        "service": ChaosNode(name="ts-order-service"),
+        "namespace": ChaosNode(name="ts"),
+        "class": ChaosNode(name="order.service.OrderServiceImpl"),
+        "method": ChaosNode(name="calculatePrice"),
+        "mutationType": ChaosNode(name="constant"),
+        "from": ChaosNode(name="100"),
+        "to": ChaosNode(name="0"),
+    }
+)
+```
+
+**ChaosNode Example (Operator Mutation)**:
+```python
+jvm_mutator_operator = ChaosNode(
+    name="JVMRuntimeMutator",
+    children={
+        "service": ChaosNode(name="ts-payment-service"),
+        "namespace": ChaosNode(name="ts"),
+        "class": ChaosNode(name="payment.service.PaymentServiceImpl"),
+        "method": ChaosNode(name="calculateTotal"),
+        "mutationType": ChaosNode(name="operator"),
+        "strategy": ChaosNode(name="add_to_sub"),  # Change + to -
+    }
+)
+```
+
+**ChaosNode Example (String Mutation)**:
+```python
+jvm_mutator_string = ChaosNode(
+    name="JVMRuntimeMutator",
+    children={
+        "service": ChaosNode(name="ts-user-service"),
+        "namespace": ChaosNode(name="ts"),
+        "class": ChaosNode(name="user.service.UserServiceImpl"),
+        "method": ChaosNode(name="getWelcomeMessage"),
+        "mutationType": ChaosNode(name="string"),
+        "strategy": ChaosNode(name="empty"),  # Return empty string
+    }
+)
+```
+
+**Operator Mutation Strategies**:
+| Strategy | Description |
+|----------|-------------|
+| `add_to_sub` | Change `+` to `-` |
+| `sub_to_add` | Change `-` to `+` |
+| `mul_to_div` | Change `*` to `/` |
+| `div_to_mul` | Change `/` to `*` |
+| `mod_to_mul` | Change `%` to `*` |
+| `and_to_or` | Change `&&` to `\|\|` |
+| `or_to_and` | Change `\|\|` to `&&` |
+| `eq_to_ne` | Change `==` to `!=` |
+| `ne_to_eq` | Change `!=` to `==` |
+| `lt_to_ge` | Change `<` to `>=` |
+| `ge_to_lt` | Change `>=` to `<` |
+
+**String Mutation Strategies**:
+| Strategy | Description |
+|----------|-------------|
+| `empty` | Return empty string |
+| `null` | Return null |
+| `reverse` | Reverse the string |
+| `uppercase` | Convert to uppercase |
+| `lowercase` | Convert to lowercase |
+| `trim` | Trim whitespace |
+
+**Use Cases**:
+- Test mutation testing coverage
+- Study fault localization algorithms
+- Inject subtle semantic bugs
+- Validate data validation logic
+- Test boundary conditions
+
+**Requirements**:
+- Target must be a Java application (JVM 8+)
+- Class must be loaded by application classloader
+- Method signature must match exactly
+
 ## HTTP Faults
 
 HTTP faults inject failures at the HTTP protocol level.
@@ -435,3 +526,4 @@ request = SubmitInjectionReq(
 - [HandlerNode Format](../handler-node-format): Complete ChaosNode reference
 - [Workflow Overview](../workflow-overview): End-to-end process
 - [Quickstart](../../quickstart): Submit your first injection
+- [Adding New Fault Types](../adding-new-fault-types): Guide for implementing custom fault types
