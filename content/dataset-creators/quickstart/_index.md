@@ -9,7 +9,7 @@ Submit your first fault injection and monitor data collection in under 10 minute
 
 - Python 3.10 or higher
 - Access to AegisLab API endpoint
-- API credentials (token or username/password)
+- API credentials (username/password)
 
 ## Step 1: Install AegisLab SDK
 
@@ -33,19 +33,9 @@ Set your AegisLab API endpoint and credentials:
 
 ```bash
 # Set your AegisLab API URL (see .env.example for defaults)
-export AEGISLAB_API_URL="http://10.10.10.220:32080"  # Default production endpoint
-export AEGISLAB_TOKEN="your-api-token"
-```
-
-Or configure in your Python code:
-
-```python
-from rcabench.openapi import Configuration, ApiClient
-
-config = Configuration(
-    host="${AEGISLAB_API_URL}",  # Use environment variable, default: http://10.10.10.220:32080
-    api_key={"Authorization": "Bearer your-api-token"}
-)
+export RCABENCH_BASE_URL="http://127.0.0.1:8082"
+export RCABENCH_USERNAME="admin"
+export RCABENCH_PASSWORD="admin123"
 ```
 
 ## Step 3: Submit Your First Fault Injection
@@ -53,8 +43,8 @@ config = Configuration(
 Create a simple fault injection script:
 
 ```python
-from rcabench.openapi import ApiClient, Configuration
 from rcabench.openapi.api import InjectionsApi
+from rcabench.openapi.client import RCABenchClient
 from rcabench.openapi.models import SubmitInjectionReq, ChaosNode, ContainerSpec
 
 # Configure API client
@@ -146,6 +136,7 @@ datasets_api.download_dataset_version(
 ```
 
 The dataset will contain:
+
 - `abnormal_traces.parquet`: Distributed traces during fault injection
 - `normal_traces.parquet`: Baseline traces before fault injection
 - `abnormal_metrics.parquet`: Time-series metrics during fault
